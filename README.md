@@ -18,6 +18,7 @@ catalogarlo a mano.
 | | |
 |---|---|
 | **La aplicación** | https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/ |
+| **Panel del modelo** | https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/panel.html |
 | **La API — documentación interactiva** | https://techmind-api-24gg.onrender.com/docs |
 
 En Swagger podés clasificar cualquier texto sin instalar nada: abrí
@@ -199,6 +200,7 @@ nlp/           Módulo de inferencia: clasificador, limpieza, palabras clave
 notebooks/     Limpieza y EDA · entrenamiento · sugerencias y relacionados
 modelos/       Los artefactos entrenados
 index.html     La interfaz
+panel.html     Panel con las métricas del modelo
 dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 ```
 
@@ -208,6 +210,7 @@ dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 |---|---|---|
 | `POST` | **`/contenido`** | Clasifica un contenido técnico |
 | `GET` | `/buscar` | Busca en el histórico por palabra clave |
+| `GET` | `/metricas` | Rendimiento del modelo y composición del corpus |
 | `POST` | `/lote` | Clasifica un CSV entero de una vez |
 | `GET` | `/sugerencias` | Términos de ejemplo para los botones |
 | `GET` | `/categorias` | Las 8 categorías |

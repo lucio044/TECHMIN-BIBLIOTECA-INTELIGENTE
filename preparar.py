@@ -19,6 +19,7 @@ ARTEFACTOS = (
     "modelo_techmind_v2.joblib",
     "matriz_historica.pkl",
     "sugerencias_botones.json",
+    "metricas_modelo.json",
 )
 
 

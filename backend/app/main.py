@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.routers import (health, contenido, categorias, chat, modelo, biblioteca,
-                         sugerencias, busqueda, lote)
+                         sugerencias, busqueda, lote, metricas)
 from app.core.config import settings
 from app.ml.loader import cargar_modelo
 from app.ml.recomendador import cargar_recomendador
@@ -35,6 +35,7 @@ app.include_router(biblioteca.router)
 app.include_router(sugerencias.router)
 app.include_router(busqueda.router)
 app.include_router(lote.router)
+app.include_router(metricas.router)
 
 
 @app.on_event("startup")
