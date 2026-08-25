@@ -13,7 +13,10 @@ set -euo pipefail
 
 REPO="https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE.git"
 DESTINO="/opt/techmind"
-USUARIO="${SUDO_USER:-$USER}"
+# id -un es el ultimo recurso porque siempre responde. SUDO_USER y USER
+# pueden no estar definidas --al ejecutar por tuberia, por ejemplo-- y con
+# set -u eso aborta el script en la primera linea en vez de instalar nada.
+USUARIO="${SUDO_USER:-${USER:-$(id -un)}}"
 
 # La IP publica tiene que ser la IP ESTATICA ya asignada a la instancia.
 # Por eso se pasa como argumento en vez de leerla de los metadatos: en
