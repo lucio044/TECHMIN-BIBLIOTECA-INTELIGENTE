@@ -11,14 +11,17 @@ services:
     region: oregon
     rootDir: backend
 
-    buildCommand: pip install -r requirements.txt
+    # Los artefactos ya vienen en el repositorio que Render clona, asi que
+    # se copian durante la construccion en vez de descargarlos al arrancar.
+    # Eso saca la descarga del camino critico: el arranque en frio del plan
+    # gratuito ya cuesta bastante como para sumarle 33 MB de red.
+    buildCommand: pip install -r requirements.txt && python ../preparar.py
 
     # $PORT lo asigna Render; no se puede fijar un puerto propio.
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
-    # El disco del plan gratuito es efimero: lo que se descarga se pierde
-    # al reiniciar. Por eso los artefactos se bajan del repositorio en cada
-    # arranque, que son 33 MB y unos segundos.
+    # Las URLs quedan como respaldo: si por lo que sea los artefactos no
+    # estuvieran en disco, la API los descarga sola al arrancar.
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"

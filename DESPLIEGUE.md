@@ -30,18 +30,23 @@ https://techmind-api-24gg.onrender.com/health    ->  {"status":"ok"}
 https://techmind-api-24gg.onrender.com/docs      ->  Swagger
 ```
 
-### Por qué el primer arranque tarda
+### El arranque en frío
 
-El disco del plan gratuito es efímero: se borra al reiniciar. Por eso la API
-descarga los 33 MB de artefactos desde este repositorio cada vez que
-arranca. Son unos segundos, y evita tenerlos duplicados.
+Medido contra el servicio real: **72 segundos** cuando estaba dormido, y
+**menos de un segundo** despierto.
+
+Los artefactos se copian durante la construcción, no al arrancar, así la
+descarga de 33 MB queda fuera del camino crítico. El resto del tiempo es
+Render levantando el contenedor, y eso no se puede acortar en el plan
+gratuito — por eso importa el ping del punto siguiente.
 
 ---
 
 ## 2 · Mantenerlo despierto
 
 El plan gratuito **apaga el servicio a los 15 minutos sin uso**. La visita
-siguiente espera entre 30 y 60 segundos mientras vuelve a arrancar.
+siguiente espera **unos 72 segundos** mientras vuelve a arrancar — medido,
+no estimado.
 
 Se evita con un ping periódico:
 
