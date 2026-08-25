@@ -18,7 +18,6 @@ catalogarlo a mano.
 | | |
 |---|---|
 | **La aplicación** | https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/ |
-| **Panel del modelo** | https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/panel.html |
 | **La API — documentación interactiva** | https://techmind-api-24gg.onrender.com/docs |
 
 En Swagger podés clasificar cualquier texto sin instalar nada: abrí
@@ -199,8 +198,7 @@ backend/       La API (FastAPI)
 nlp/           Módulo de inferencia: clasificador, limpieza, palabras clave
 notebooks/     Limpieza y EDA · entrenamiento · sugerencias y relacionados
 modelos/       Los artefactos entrenados
-index.html     La interfaz
-panel.html     Panel con las métricas del modelo
+index.html     La interfaz: clasificar, biblioteca, mis temas y dashboard
 dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 ```
 

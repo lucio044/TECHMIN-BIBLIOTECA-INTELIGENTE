@@ -185,7 +185,8 @@
     <nav class="tabs">
       <button class="tab active" data-view="clasificar" onclick="setView('clasificar')">✍️ Clasificar</button>
       <button class="tab" data-view="biblioteca" onclick="setView('biblioteca')">📚 Biblioteca <span class="n" id="tabCount">0</span></button>
-      <button class="tab" data-view="panel" onclick="setView('panel')">📊 Panel</button>
+      <button class="tab" data-view="panel" onclick="setView('panel')">🗂️ Mis temas</button>
+        <button class="tab" data-view="modelo" onclick="setView('modelo')">📊 Dashboard</button>
     </nav>
     <span class="tag">Equipo 46 · Hackathon ONE</span>
   </div>
@@ -250,13 +251,8 @@
     <!-- ============ VISTA PANEL ============ -->
     <section id="v-panel" hidden>
       <div class="hero">
-        <h1>Panel de la <span class="gr">base de conocimiento</span></h1>
-        <div class="sub">Cómo se distribuye y de qué habla todo el conocimiento organizado.</div>
-        <div class="sub" style="margin-top:10px">
-          ¿Buscabas cómo rinde el modelo? Eso está en el
-          <a href="panel.html" style="color:var(--grad2);text-decoration:none;border-bottom:1px solid rgba(35,213,200,.35)">panel del modelo</a>:
-          F1 por categoría, composición del corpus y qué términos aprendió.
-        </div>
+        <h1>Mis <span class="gr">temas</span></h1>
+        <div class="sub">Cómo se distribuye y de qué habla el conocimiento que fuiste guardando.</div>
       </div>
       <div class="stats" id="stats"></div>
       <div class="panel-cols">
@@ -268,6 +264,33 @@
           <div class="card-h">🏷️ Temas más frecuentes</div>
           <div class="card-b kwcloud" id="kwcloud"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA MODELO ============ -->
+    <section id="v-modelo" hidden>
+      <div class="hero">
+        <h1><span class="gr">Dashboard</span> del modelo</h1>
+        <div class="sub">Cómo rinde el clasificador y de qué está hecho el corpus con el que aprendió. Todo sale de la API en vivo.</div>
+      </div>
+      <div id="mCifras" class="stats"></div>
+      <div class="panel-cols">
+        <div class="card">
+          <div class="card-h">🎯 Acierto por categoría</div>
+          <div class="card-b" id="mF1"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">📦 Documentos del corpus</div>
+          <div class="card-b" id="mCorpus"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="card-h">🔍 Qué aprendió · términos más decisivos</div>
+        <div class="card-b" id="mTerminos"></div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="card-h">⚙️ Ficha técnica</div>
+        <div class="card-b" id="mFicha"></div>
       </div>
     </section>
   </div>
@@ -357,13 +380,103 @@
 
   /* ---------- vistas ---------- */
   function setView(v){
-    ['clasificar','biblioteca','panel'].forEach(x=>{
+    ['clasificar','biblioteca','panel','modelo'].forEach(x=>{
       document.getElementById('v-'+x).hidden = (x!==v);
     });
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.view===v));
     if(v==='biblioteca') renderBiblioteca();
     if(v==='panel') renderPanel();
+    if(v==='modelo') renderModelo();
     window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+
+  /* ---------- modelo ---------- */
+  let METRICAS = null;
+
+  function filaBarra(nombre, valor, maximo, texto){
+    const col = COLORES[nombre] || ["#6d5efc","#8b7dff"];
+    return `<div class="dist-row">
+      <span class="dn"><span class="dd" style="background:${col[0]}"></span>${nombre}</span>
+      <span class="dist-bar"><i style="width:${(valor/maximo*100).toFixed(1)}%;background:linear-gradient(90deg,${col[0]},${col[1]})"></i></span>
+      <span class="dv">${texto}</span>
+    </div>`;
+  }
+
+  function pintarModelo(d){
+    const m = d.modelo, r = d.rendimiento, c = d.corpus, t = d.terminos_decisivos;
+    const veces = r.linea_base_f1_macro ? (r.f1_macro / r.linea_base_f1_macro) : null;
+
+    document.getElementById('mCifras').innerHTML = `
+      <div class="stat"><div class="k">F1 macro</div><div class="v grad">${r.f1_macro?.toFixed(4) ?? "—"}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">sobre ${(r.textos_de_prueba||0).toLocaleString('es')} textos de prueba</div></div>
+      <div class="stat"><div class="k">Validación cruzada</div><div class="v">${r.validacion_cruzada ? r.validacion_cruzada.media.toFixed(4) : "—"}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">± ${r.validacion_cruzada?.desvio ?? "—"} en 5 particiones</div></div>
+      <div class="stat"><div class="k">Mejor que el azar</div><div class="v">${veces ? veces.toFixed(1)+"×" : "—"}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">la línea base acierta ${r.linea_base_f1_macro ?? "—"}</div></div>
+      <div class="stat"><div class="k">Documentos indexados</div><div class="v">${(c.documentos_indexados||0).toLocaleString('es')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">para el contenido relacionado</div></div>`;
+
+    const porF1 = Object.entries(r.por_categoria).map(([k,v])=>[k,v.f1]).sort((a,b)=>b[1]-a[1]);
+    document.getElementById('mF1').innerHTML =
+      porF1.map(([n,v]) => filaBarra(n, v, 1, v.toFixed(2))).join("") +
+      `<div style="font-size:13px;color:var(--txt2);margin-top:16px;line-height:1.65">
+        Mobile y Bases de Datos rinden mejor porque tienen vocabulario exclusivo:
+        <b>swiftui</b> solo aparece en Mobile, <b>postgresql</b> solo en Bases de Datos.
+        Backend y Programación General cuestan por lo contrario — una agrupa frameworks
+        y la otra lenguajes, y muchos textos tocan las dos.</div>`;
+
+    const porCorpus = Object.entries(c.por_categoria).sort((a,b)=>b[1]-a[1]);
+    const maxC = Math.max(...porCorpus.map(x=>x[1]));
+    document.getElementById('mCorpus').innerHTML =
+      porCorpus.map(([n,v]) => filaBarra(n, v, maxC, v.toLocaleString('es'))).join("") +
+      `<div style="font-size:13px;color:var(--txt2);margin-top:16px;line-height:1.65">
+        Seguridad tiene la mitad de ejemplos que Frontend. Por eso el modelo se entrena
+        con <b>class_weight='balanced'</b>, que hace que las categorías chicas pesen
+        igual que las grandes.</div>`;
+
+    document.getElementById('mTerminos').innerHTML =
+      `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">` +
+      porF1.map(([cat]) => {
+        const col = COLORES[cat] || ["#6d5efc","#8b7dff"];
+        return `<div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:8px">
+            <span class="dd" style="background:${col[0]}"></span>${cat}</div>
+          <div class="kwcloud">${(t[cat]||[]).map(x=>`<span class="chip">${x}</span>`).join("")}</div>
+        </div>`;
+      }).join("") + `</div>
+      <div style="font-size:13px;color:var(--txt2);margin-top:18px;line-height:1.65">
+        Los términos de mayor peso en cada categoría, según los coeficientes del
+        clasificador. Son vocabulario técnico real y no rarezas del corpus: esa es la
+        mejor señal de que el modelo decide por el contenido y no por el estilo de una fuente.</div>`;
+
+    document.getElementById('mFicha').innerHTML =
+      `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px">` +
+      [["Algoritmo", m.algoritmo],
+       ["Vocabulario", m.vocabulario.toLocaleString('es') + " términos"],
+       ["N-gramas", m.ngramas.join(" a ")],
+       ["Regularización", "C = " + m.regularizacion_C],
+       ["Pesos balanceados", m.pesos_balanceados ? "sí" : "no"],
+       ["Accuracy", r.accuracy ?? "—"]]
+      .map(([k,v]) => `<div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">${k}</div>
+        <div style="font-size:15px;margin-top:5px">${v}</div></div>`).join("") + `</div>`;
+  }
+
+  function renderModelo(){
+    if (METRICAS) return pintarModelo(METRICAS);
+    document.getElementById('mCifras').innerHTML =
+      `<div class="stat" style="grid-column:1/-1;text-align:center;color:var(--txt2)">Cargando métricas…</div>`;
+    fetch(API + "/metricas")
+      .then(r => { if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(d => { METRICAS = d; pintarModelo(d); })
+      .catch(e => {
+        document.getElementById('mCifras').innerHTML =
+          `<div class="stat" style="grid-column:1/-1;text-align:center;color:#ff9b9b">
+            No se pudieron cargar las métricas
+            <div style="font-size:12px;color:var(--muted);margin-top:8px">
+              ${e.message} · Si la API estuvo dormida tarda hasta un minuto. Probá de nuevo.</div></div>`;
+      });
   }
 
   /* ---------- clasificar ---------- */
