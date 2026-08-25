@@ -74,6 +74,119 @@ No hay que cambiar nada para desarrollar.
 | Receta de sopa / Poner agua a hervir con sal | Sin relacionados: no inventa resultados |
 | Título y texto solo con espacios | Responde `422`, no un error interno |
 
+---
+
+## Ejemplos de uso
+
+### 1 · Clasificar un contenido
+
+```bash
+curl -X POST https://techmind-api-24gg.onrender.com/contenido   -H "Content-Type: application/json"   -d '{"titulo":"Despliegue con Docker","texto":"Contenedores, Kubernetes y pipelines de CI/CD en AWS con Terraform"}'
+```
+
+```json
+{
+  "categoria": "DevOps / Cloud",
+  "probabilidad": 0.997,
+  "informacion_adicional": ["ci cd", "Terraform", "Kubernetes", "AWS", "Docker"],
+  "ranking_categorias": [],
+  "contenidos_relacionados": [
+    {
+      "titulo": "Configure Your Machine to Create Resources with Terraform",
+      "extracto": "Terraform is an infrastructure as code tool that lets you...",
+      "categoria": "DevOps / Cloud",
+      "similitud": 0.45
+    }
+  ]
+}
+```
+
+### 2 · Buscar por palabra clave
+
+```bash
+curl "https://techmind-api-24gg.onrender.com/buscar?termino=docker&cantidad=3"
+```
+
+```json
+{
+  "termino": "docker",
+  "total": 3,
+  "resultados": [
+    {
+      "id": 4821,
+      "titulo": "Getting started with Jenkins Docker. Part I",
+      "extracto": "In this article we will see how to run Jenkins inside a...",
+      "categoria": "DevOps / Cloud",
+      "relevancia": 0.78
+    }
+  ]
+}
+```
+
+Devuelve los documentos donde ese término más pesa. Es distinto del
+contenido relacionado: allí entra un texto completo y se buscan documentos
+parecidos en conjunto; acá entra un término suelto.
+
+Si el término no aparece en el corpus, la respuesta es una lista vacía —
+no el resultado menos malo.
+
+### 3 · Clasificar un CSV entero
+
+```bash
+curl -X POST https://techmind-api-24gg.onrender.com/lote   -F "archivo=@contenidos.csv"
+```
+
+El CSV necesita una columna de título y otra de texto. Se aceptan varios
+nombres —`titulo`/`title`, `texto`/`contenido`/`text`/`content`— porque un
+archivo exportado de otra herramienta rara vez usa los que uno espera.
+
+```json
+{
+  "archivo": "contenidos.csv",
+  "total": 10,
+  "clasificadas": 8,
+  "con_error": 2,
+  "resumen_por_categoria": {
+    "DevOps / Cloud": 2,
+    "Backend": 2,
+    "Frontend": 2,
+    "Mobile": 1,
+    "Seguridad": 1
+  },
+  "resultados": [
+    {"fila": 1, "titulo": "Despliegue con Docker", "categoria": "DevOps / Cloud", "probabilidad": 0.93, "palabras_clave": ["Docker", "Kubernetes"]},
+    {"fila": 9, "titulo": "", "error": "falta el titulo"}
+  ]
+}
+```
+
+Una fila mal formada no tumba el lote: se anota su error y se sigue con las
+demás. Un archivo de mil filas con tres rotas devuelve las 997 buenas y
+dice exactamente cuáles fallaron.
+
+Límite: **1.000 filas** y **5 MB** por archivo.
+
+### 4 · Consultar las categorías
+
+```bash
+curl https://techmind-api-24gg.onrender.com/categorias
+```
+
+```json
+{
+  "categorias": ["Backend", "Bases de Datos", "Ciencia de Datos", "DevOps / Cloud",
+                 "Frontend", "Mobile", "Programación General", "Seguridad"]
+}
+```
+
+### 5 · Entrada inválida
+
+```bash
+curl -X POST https://techmind-api-24gg.onrender.com/contenido   -H "Content-Type: application/json"   -d '{"titulo":"   ","texto":"algo"}'
+```
+
+Responde `422` con el detalle del campo que falla, no un error interno.
+
 `GET /sugerencias` devuelve los 15 ejemplos de los botones, sin parámetros.
 
 ---
@@ -94,6 +207,8 @@ dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 | Método | Endpoint | Qué hace |
 |---|---|---|
 | `POST` | **`/contenido`** | Clasifica un contenido técnico |
+| `GET` | `/buscar` | Busca en el histórico por palabra clave |
+| `POST` | `/lote` | Clasifica un CSV entero de una vez |
 | `GET` | `/sugerencias` | Términos de ejemplo para los botones |
 | `GET` | `/categorias` | Las 8 categorías |
 | `GET` | `/modelo/info` | Metadatos del modelo cargado |
@@ -205,7 +320,7 @@ otros dos.
 
 ```bash
 cd nlp && pytest          # 72 pruebas
-cd backend && pytest      # 8 pruebas
+cd backend && pytest      # 20 pruebas
 ```
 
 Ninguna necesita el `.joblib` real: usan datos sintéticos y Pipelines

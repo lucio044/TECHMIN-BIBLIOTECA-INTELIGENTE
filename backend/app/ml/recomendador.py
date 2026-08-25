@@ -42,6 +42,10 @@ class RecomendadorContenido:
         matriz = paquete["matriz"]
         self._matriz = matriz.tocsr() if matriz.format != "csr" else matriz
 
+        # El vocabulario se pide una sola vez: get_feature_names_out()
+        # reconstruye el arreglo completo en cada llamada.
+        self._vocabulario = self._vectorizador.get_feature_names_out()
+
     def recomendar(self, texto: str, top_n: int = 3, umbral: float = UMBRAL_SIMILITUD_MINIMA) -> List[dict]:
         if not texto or not texto.strip():
             return []
@@ -64,6 +68,55 @@ class RecomendadorContenido:
             for i in candidatos
             if similitudes[i] >= umbral
         ]
+
+    def buscar(self, termino: str, top_n: int = 10) -> List[dict]:
+        """Busca en el historico los documentos donde ese termino pesa mas.
+
+        Es distinto de `recomendar`: alli entra un texto completo y se
+        buscan documentos parecidos en conjunto. Aca entra un termino
+        suelto y se devuelven los documentos que mas hablan de el.
+
+        El vector de una sola palabra tiene un solo valor distinto de cero,
+        asi que el producto punto solo alcanza a los documentos que
+        contienen ese termino. No hay coincidencias por parecido: si el
+        documento no lo menciona, no aparece.
+
+        Devuelve lista vacia si el termino no esta en el vocabulario del
+        modelo, que es una respuesta legitima y no un error.
+        """
+        if not termino or not termino.strip():
+            return []
+
+        vector = self._vectorizador.transform([termino.strip()])
+        if vector.nnz == 0:
+            return []
+
+        pesos = (self._matriz @ vector.T).toarray().ravel()
+
+        cantidad = min(top_n, pesos.size)
+        candidatos = np.argpartition(pesos, -cantidad)[-cantidad:]
+        candidatos = candidatos[np.argsort(pesos[candidatos])[::-1]]
+
+        return [
+            {
+                "id": int(self._ids[i]),
+                "titulo": str(self._titulos[i]),
+                "extracto": str(self._extractos[i]) if self._extractos is not None else "",
+                "categoria": str(self._categorias[i]),
+                "relevancia": round(float(pesos[i]), 3),
+            }
+            for i in candidatos
+            if pesos[i] > 0
+        ]
+
+    def termino_conocido(self, termino: str) -> bool:
+        """Indica si el termino existe en el vocabulario del modelo."""
+        return self._vectorizador.transform([termino.strip()]).nnz > 0
+
+    @property
+    def total_documentos(self) -> int:
+        """Cuantos documentos hay indexados."""
+        return int(self._matriz.shape[0])
 
 
 def cargar_recomendador():

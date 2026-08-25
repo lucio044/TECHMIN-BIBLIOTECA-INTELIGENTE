@@ -24,3 +24,6 @@ uvicorn==0.51.0
 requests==2.32.4
 pydantic-settings==2.15.0
 openai==2.53.0
+
+# Necesario para recibir archivos en POST /lote
+python-multipart==0.0.20
