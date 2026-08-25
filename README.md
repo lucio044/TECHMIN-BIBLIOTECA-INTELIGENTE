@@ -306,10 +306,9 @@ La diferencia sobre un texto jurídico real:
   modelo propio      ->  Laboral        63%
 ```
 
-> **Persistencia.** Los modelos viven en memoria y se pierden al reiniciar:
-> el plan gratuito no tiene disco persistente ni base de datos. En
-> producción se serializan a Object Storage con el identificador como
-> nombre, igual que el modelo principal.
+> **Persistencia.** Con base de datos configurada el modelo se guarda
+> serializado y sobrevive a los reinicios. Sin base queda en memoria, para
+> que la demo pública funcione sin depender de un servidor externo.
 
 ## Cuando el modelo se equivoca
 
@@ -440,6 +439,54 @@ la matriz guarda su propio vectorizador y las sugerencias salen del mismo
 vocabulario.
 
 ---
+
+## La base de datos
+
+Las correcciones y los modelos propios necesitan sobrevivir a un reinicio.
+El servicio funciona sin base —guardando en memoria— pero entonces se pierde
+todo cada vez que Render reinicia el contenedor.
+
+### Configurarla
+
+Se usa **[Neon](https://neon.tech)**: PostgreSQL gestionado, plan gratuito
+de 0,5 GB, **sin tarjeta**. Se eligió sobre Supabase porque este último
+pausa el proyecto tras una semana sin uso, que es justo el peor
+comportamiento para algo que se abre cada tanto.
+
+1. Crear cuenta en neon.tech con GitHub
+2. Crear un proyecto — entrega la cadena de conexión
+3. Ponerla en Render como variable `DATABASE_URL`
+
+Las tablas se crean solas al arrancar.
+
+```
+DATABASE_URL=postgresql://usuario:clave@ep-xxx.neon.tech/basededatos
+```
+
+### Qué se guarda dónde
+
+| | Dónde | Por qué |
+|---|---|---|
+| Correcciones | Postgres | filas chicas, se agrupan con `GROUP BY` |
+| Metadatos de modelos propios | Postgres | nombre, categorías, F1 |
+| El Pipeline entrenado | Postgres, en `bytea` | pesa 1-3 MB, entra en la fila |
+| Límite de peticiones | **memoria** | una escritura por petición mataría la base |
+
+Ese último punto es deliberado: un contador de límite escribe en cada
+llamada, y contra una base gratuita eso cuesta más que el trabajo real. Si
+algún día corren varias réplicas, ahí va Redis —Upstash tiene plan gratuito
+sin tarjeta— que está hecho para eso.
+
+### Detalles de la conexión
+
+`pool_pre_ping` comprueba que la conexión siga viva antes de usarla: las
+bases serverless cortan las ociosas y sin eso la primera consulta tras un
+rato falla. `pool_recycle` las renueva cada media hora por si el corte
+ocurre sin que el ping alcance a notarlo.
+
+La cadena se normaliza a `postgresql+psycopg://`. Neon la entrega con el
+prefijo `postgres://`, que SQLAlchemy 2 rechaza con un error que no dice
+que el problema es el prefijo.
 
 ## En producción
 

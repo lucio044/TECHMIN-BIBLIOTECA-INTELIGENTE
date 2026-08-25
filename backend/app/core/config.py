@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     description: str = "API que clasifica contenido técnico usando NLP y ML."
 
+    # Cadena completa, como la entregan Neon y los servicios gestionados.
+    # Tiene prioridad sobre las variables sueltas de abajo.
+    database_url: str | None = None
+
     db_user: str = "root"
     db_password: str | None = None
     db_host: str = "localhost"

@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.ml.loader import cargar_modelo
 from app.ml.recomendador import cargar_recomendador
 from app.ml.sugerencias_loader import cargar_sugerencias
+from app.core.database import crear_tablas, hay_base
 import logging
 import uuid
 
@@ -98,6 +99,14 @@ async def cabeceras_de_servicio(request: Request, call_next):
 
 @app.on_event("startup")
 def iniciar_modelo():
+    # Las tablas primero: si la base esta configurada pero inalcanzable,
+    # conviene enterarse al arrancar y no en la primera correccion.
+    crear_tablas()
+    if not hay_base():
+        logging.getLogger(__name__).warning(
+            "Sin DATABASE_URL: las correcciones y los modelos propios se "
+            "pierden al reiniciar. Ver README para configurarla."
+        )
     cargar_modelo()
     cargar_recomendador()
     cargar_sugerencias()

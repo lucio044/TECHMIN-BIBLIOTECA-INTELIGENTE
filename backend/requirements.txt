@@ -27,3 +27,6 @@ openai==2.53.0
 
 # Necesario para recibir archivos en POST /lote
 python-multipart==0.0.20
+
+# Conector de PostgreSQL, para Neon y similares
+psycopg[binary]==3.2.3
