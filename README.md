@@ -1,2 +1,241 @@
-# TECHMIN-BIBLIOTECA-INTELIGENTE
- MVP que clasifique y enriquezca automáticamente contenido técnico
+# TechMind — Biblioteca Inteligente de Conocimiento Técnico
+
+Recibe contenido técnico —artículos, documentación, tutoriales, apuntes— y
+devuelve en JSON lo necesario para organizarlo solo: **categoría**, **nivel
+de confianza**, **palabras clave**, **otras categorías candidatas** y
+**contenido relacionado** del histórico.
+
+Pensada para plataformas educativas, comunidades técnicas y equipos que
+necesitan clasificar y reutilizar grandes volúmenes de conocimiento sin
+catalogarlo a mano.
+
+**Hackathon ONE — Alura Latam + Oracle · Equipo 46 (G9 LATAM)**
+
+---
+
+## Levantarla
+
+```bash
+git clone https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE.git
+cd TECHMIN-BIBLIOTECA-INTELIGENTE
+
+python preparar.py                    # coloca los artefactos donde van
+cd backend
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+
+Abrir **http://127.0.0.1:8000/docs** — cada endpoint tiene un botón
+*Try it out* para probarlo sin escribir código.
+
+Arranca sin base de datos y sin clave de DeepSeek.
+
+### La interfaz
+
+`frontend/index.html` se abre directo en el navegador, sin instalar nada.
+Apunta a la API desplegada; para usar la local hay que cambiar la URL que
+está al final del archivo.
+
+---
+
+## Qué probar
+
+`POST /contenido` es el principal. En *Try it out*, pegar:
+
+```json
+{
+  "titulo": "Despliegue con Docker",
+  "texto": "Contenedores, Kubernetes y pipelines de CI/CD en AWS con Terraform"
+}
+```
+
+| Entrada | Qué muestra |
+|---|---|
+| Programar en C++ y C# | Los términos técnicos llegan enteros al modelo |
+| Receta de sopa / Poner agua a hervir con sal | Sin relacionados: no inventa resultados |
+| Título y texto solo con espacios | Responde `422`, no un error interno |
+
+`GET /sugerencias` devuelve los 15 ejemplos de los botones, sin parámetros.
+
+---
+
+## Qué hay acá
+
+```
+backend/       La API (FastAPI)
+nlp/           Módulo de inferencia: clasificador, limpieza, palabras clave
+notebooks/     Limpieza y EDA · entrenamiento · sugerencias y relacionados
+modelos/       Los artefactos entrenados
+frontend/      La interfaz
+dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
+```
+
+### Los endpoints
+
+| Método | Endpoint | Qué hace |
+|---|---|---|
+| `POST` | **`/contenido`** | Clasifica un contenido técnico |
+| `GET` | `/sugerencias` | Términos de ejemplo para los botones |
+| `GET` | `/categorias` | Las 8 categorías |
+| `GET` | `/modelo/info` | Metadatos del modelo cargado |
+| `POST` `GET` | `/biblioteca` | Clasifica y guarda · historial |
+| `POST` | `/chat` | Explicación en lenguaje natural |
+| `GET` | `/health` | Estado del servicio |
+
+### Respuesta de `/contenido`
+
+```json
+{
+  "categoria": "Mobile",
+  "probabilidad": 0.99,
+  "informacion_adicional": ["Jetpack Compose", "Android", "Kotlin"],
+  "ranking_categorias": [],
+  "contenidos_relacionados": [
+    {
+      "titulo": "How can I use MapMyIndia in Kotlin with Jetpack compose",
+      "extracto": "Ive been trying to integrate MapMyIndia with jetpack compose but...",
+      "categoria": "Mobile",
+      "similitud": 0.37
+    }
+  ]
+}
+```
+
+`ranking_categorias` trae las candidatas con probabilidad ≥ 0.05 cuando la
+clasificación fue reñida. `contenidos_relacionados` solo aparece cuando la
+confianza supera 0.5 — con textos ambiguos, la similitud puede devolver
+documentos sin relación real aunque el puntaje sea alto.
+
+---
+
+## El modelo
+
+| | |
+|---|---|
+| Técnica | TF-IDF + Regresión Logística (`class_weight='balanced'`) |
+| Formato | `Pipeline` de scikit-learn serializado con `joblib` |
+| Vectorización | Unigramas y bigramas, 60.000 términos |
+| Ajuste | `GridSearchCV` con criterio F1 macro |
+| Clases | 8 categorías |
+
+Es un Pipeline completo: recibe texto crudo y devuelve la predicción, con el
+vectorizador adentro, de modo que el preprocesamiento no puede
+desincronizarse del modelo.
+
+| Métrica | Valor |
+|---|---|
+| **F1 macro (test)** | 0.7549 |
+| **Validación cruzada 5-fold** | 0.7508 ± 0.0019 |
+| Accuracy (test) | 0.7530 |
+| Línea base (clase más frecuente) | 0.0309 |
+
+Sobre un conjunto de prueba de **7.652 textos** que conserva la distribución
+real y no se tocó en ningún momento. El F1 por categoría va de **0.63**
+(Backend) a **0.85** (Mobile).
+
+Se eligió por F1 macro —y no por accuracy— para no premiar a un modelo que
+acierte solo en las categorías grandes. La coincidencia entre el test y la
+validación cruzada confirma que el resultado no depende de cómo cayó la
+división.
+
+### Contenido relacionado
+
+`modelos/matriz_historica.pkl` guarda los 38.257 documentos del corpus
+vectorizados, con el vectorizador adentro para que un texto nuevo se compare
+en el mismo espacio, y un extracto de 200 caracteres de cada uno.
+
+No se almacena la matriz de similitudes entre todos los pares: con 38.257
+documentos serían más de mil cuatrocientos millones de valores, casi todos
+cercanos a cero. Se guardan los vectores y se compara contra ellos
+únicamente el texto de la consulta.
+
+Su vocabulario **excluye las palabras vacías** de los dos idiomas. El
+clasificador se entrena sin quitarlas —aportan algo de señal para decidir la
+categoría— pero para buscar documentos parecidos son ruido: en una consulta
+corta llegan a decidir el resultado. Medido sobre este corpus, un texto
+sobre Jetpack Compose traía como primer relacionado un documento de redes
+TCP con 0,547 de similitud, y el 85 % de ese número lo aportaba la palabra
+`de`.
+
+Un vecino recomendado cae en la misma categoría que la consulta entre el
+**31 %** y el **61 %** de las veces según la categoría, contra el 12,5 % que
+daría recomendar al azar.
+
+---
+
+## Los notebooks
+
+| | |
+|---|---|
+| `1_limpieza_y_eda.ipynb` | Explora el corpus crudo, limpia y prepara |
+| `2_entrenamiento_modelo.ipynb` | Entrena y compara contra baseline y Naive Bayes |
+| `3_sugerencias_y_relacionados.ipynb` | Genera la matriz y los términos de los botones |
+
+Están ejecutados: se ven las salidas, los gráficos y la lectura de cada
+resultado sin correr nada.
+
+Para volver a ejecutarlos hace falta el dataset — ver
+[`dataset/README.md`](dataset/README.md).
+
+El orden importa: el primero produce `dataset_limpio.csv`, que consumen los
+otros dos.
+
+---
+
+## Pruebas
+
+```bash
+cd nlp && pytest          # 72 pruebas
+cd backend && pytest      # 8 pruebas
+```
+
+Ninguna necesita el `.joblib` real: usan datos sintéticos y Pipelines
+pequeños en memoria.
+
+---
+
+## Versiones
+
+Los artefactos son pickles creados con Python 3.12:
+
+```
+scikit-learn==1.8.0
+numpy>=2.0.0
+scipy>=1.13.0
+```
+
+La versión de scikit-learn debe coincidir con la del entrenamiento: el
+formato interno de `TfidfVectorizer` y `LogisticRegression` cambia entre
+versiones, y cargar el modelo con otra devuelve resultados distintos sin que
+nada falle a la vista. Numpy va fijado porque los pickles llevan arreglos
+serializados con numpy 2.x, y cargarlos con 1.x falla con
+`No module named 'numpy._core'`.
+
+Si se reentrena hay que regenerar los tres artefactos, no solo el `.joblib`:
+la matriz guarda su propio vectorizador y las sugerencias salen del mismo
+vocabulario.
+
+---
+
+## En producción
+
+Los artefactos se descargan de **OCI Object Storage** al arrancar, si no
+están en disco:
+
+```
+MODELO_URL=...
+MATRIZ_HISTORICA_URL=...
+SUGERENCIAS_BOTONES_URL=...
+```
+
+Así se puede reemplazar el modelo sin reconstruir la imagen: se cambia el
+objeto en el bucket y se reinicia el servicio.
+
+---
+
+## Proyecto completo
+
+Este repositorio tiene lo necesario para que la API funcione. El proyecto
+con el dataset, el frontend en React, la guía de despliegue y la
+documentación del equipo está en
+**[G9-LATAM-Team-46](https://github.com/No-Country-simulation/G9-LATAM-Team-46)**.

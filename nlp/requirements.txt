@@ -1,0 +1,25 @@
+# --- Modelo (Pipeline TF-IDF + clasificador en un solo objeto) ---
+# Estas son las versiones exactas con las que se entreno
+# modelo_techmind_v2.joblib y se construyo matriz_historica.pkl.
+#
+# La version de scikit-learn no es negociable: los dos archivos son pickles
+# y el formato interno de TfidfVectorizer y LogisticRegression cambia entre
+# versiones. Cargarlos con otra emite InconsistentVersionWarning y puede
+# devolver predicciones distintas sin que nada falle a la vista.
+scikit-learn==1.8.0
+joblib==1.5.3
+
+# numpy y scipy fijados a proposito: los pickles llevan arreglos de numpy
+# serializados con numpy 2.x. Cargarlos con numpy 1.x falla con
+# "No module named 'numpy._core'". scipy va fijado porque sklearn lo usa
+# para las matrices dispersas del TF-IDF, y matriz_historica.pkl guarda
+# una matriz dispersa en formato CSR.
+numpy==2.4.6
+scipy==1.17.1
+
+# --- Pruebas ---
+pytest==8.2.0
+
+# Las palabras clave se extraen de los pesos TF-IDF del propio vectorizador
+# (ver src/keywords.py), asi que no hacen falta nltk ni yake. El vocabulario
+# del vectorizador ya es bilingue porque asi se entreno.

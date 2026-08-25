@@ -1,0 +1,23 @@
+# Los artefactos viven en modelos/; preparar.py los copia a backend/app/ml/.
+backend/app/ml/*.joblib
+backend/app/ml/*.pkl
+backend/app/ml/*.json
+
+# El dataset se descarga aparte (ver dataset/README.md)
+dataset/*.csv
+
+# Archivos que generan los notebooks al ejecutarse
+notebooks/*.csv
+notebooks/*.pkl
+notebooks/*.joblib
+notebooks/*.png
+notebooks/*.md
+!notebooks/README.md
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+.env

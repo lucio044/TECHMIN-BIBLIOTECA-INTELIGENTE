@@ -1,0 +1,110 @@
+{
+  "generado": "2026-08-21",
+  "total_categorias": 8,
+  "categorias": {
+    "Backend": {
+      "registros": 5085,
+      "terminos_caracteristicos": [
+        "rspec",
+        "woocommerce",
+        "goroutine",
+        "artisan",
+        "hibernate",
+        "bean",
+        "rb",
+        "springframework"
+      ]
+    },
+    "Bases de Datos": {
+      "registros": 4236,
+      "terminos_caracteristicos": [
+        "tidb",
+        "subquery",
+        "cte",
+        "pk",
+        "scylla",
+        "shard",
+        "clause",
+        "2024"
+      ]
+    },
+    "Ciencia de Datos": {
+      "registros": 5277,
+      "terminos_caracteristicos": [
+        "hyperparameters",
+        "ggplot",
+        "ggplot2",
+        "descent",
+        "convolution",
+        "pca",
+        "convolutional",
+        "plot"
+      ]
+    },
+    "DevOps / Cloud": {
+      "registros": 5239,
+      "terminos_caracteristicos": [
+        "kube",
+        "terraform",
+        "helm",
+        "cloudformation",
+        "ansible",
+        "gke",
+        "dockerfile",
+        "cloudwatch"
+      ]
+    },
+    "Frontend": {
+      "registros": 5396,
+      "terminos_caracteristicos": [
+        "divs",
+        "stackblitz",
+        "codepen",
+        "ssr",
+        "tailwind",
+        "flexbox",
+        "jsx",
+        "vite"
+      ]
+    },
+    "Mobile": {
+      "registros": 5048,
+      "terminos_caracteristicos": [
+        "recyclerview",
+        "swiftdata",
+        "appdelegate",
+        "uiview",
+        "storyboard",
+        "swiftui",
+        "jetpack",
+        "retrofit"
+      ]
+    },
+    "Programación General": {
+      "registros": 5184,
+      "terminos_caracteristicos": [
+        "borrow",
+        "msvc",
+        "clang",
+        "lifetime",
+        "compilers",
+        "scrum",
+        "nums",
+        "crate"
+      ]
+    },
+    "Seguridad": {
+      "registros": 2792,
+      "terminos_caracteristicos": [
+        "surfshark",
+        "burp",
+        "nordvpn",
+        "ransomware",
+        "phishing",
+        "cybersecurity",
+        "bounty",
+        "ataque"
+      ]
+    }
+  }
+}

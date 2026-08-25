@@ -1,0 +1,17 @@
+idioma,categoria_esperada,categoria_predicha,probabilidad,acierto
+es,Backend,Backend,0.87,True
+en,Backend,Backend,0.99,True
+es,Bases de Datos,Bases de Datos,0.98,True
+en,Bases de Datos,Bases de Datos,0.97,True
+es,Ciencia de Datos,Ciencia de Datos,0.88,True
+en,Ciencia de Datos,Ciencia de Datos,1.0,True
+es,DevOps / Cloud,DevOps / Cloud,0.91,True
+en,DevOps / Cloud,DevOps / Cloud,1.0,True
+es,Frontend,Frontend,0.8,True
+en,Frontend,Frontend,1.0,True
+es,Mobile,Mobile,1.0,True
+en,Mobile,Mobile,1.0,True
+es,Programación General,Programación General,0.38,True
+en,Programación General,Programación General,0.72,True
+es,Seguridad,Seguridad,0.93,True
+en,Seguridad,Seguridad,1.0,True

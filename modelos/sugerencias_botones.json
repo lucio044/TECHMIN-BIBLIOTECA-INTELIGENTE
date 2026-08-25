@@ -1,0 +1,81 @@
+{
+  "generado_por": "notebook de sugerencias y contenido relacionado",
+  "total": 15,
+  "terminos": [
+    {
+      "termino": "burp",
+      "categoria": "Seguridad",
+      "documentos": 50
+    },
+    {
+      "termino": "nordvpn",
+      "categoria": "Seguridad",
+      "documentos": 66
+    },
+    {
+      "termino": "oracle sql",
+      "categoria": "Bases de Datos",
+      "documentos": 59
+    },
+    {
+      "termino": "subquery",
+      "categoria": "Bases de Datos",
+      "documentos": 100
+    },
+    {
+      "termino": "jetpack compose",
+      "categoria": "Mobile",
+      "documentos": 150
+    },
+    {
+      "termino": "recyclerview",
+      "categoria": "Mobile",
+      "documentos": 59
+    },
+    {
+      "termino": "hyperparameters",
+      "categoria": "Ciencia de Datos",
+      "documentos": 57
+    },
+    {
+      "termino": "overfitting",
+      "categoria": "Ciencia de Datos",
+      "documentos": 70
+    },
+    {
+      "termino": "kube",
+      "categoria": "DevOps / Cloud",
+      "documentos": 59
+    },
+    {
+      "termino": "terraform",
+      "categoria": "DevOps / Cloud",
+      "documentos": 168
+    },
+    {
+      "termino": "divs",
+      "categoria": "Frontend",
+      "documentos": 78
+    },
+    {
+      "termino": "pura",
+      "categoria": "Frontend",
+      "documentos": 57
+    },
+    {
+      "termino": "borrow",
+      "categoria": "Programación General",
+      "documentos": 71
+    },
+    {
+      "termino": "php artisan",
+      "categoria": "Backend",
+      "documentos": 76
+    },
+    {
+      "termino": "woocommerce",
+      "categoria": "Backend",
+      "documentos": 55
+    }
+  ]
+}

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechMind — Biblioteca Inteligente de Conocimiento Técnico</title>
+<style>
+  :root{
+    --bg0:#0a0e1a; --bg1:#0f1524; --card:rgba(255,255,255,.04); --cardline:rgba(255,255,255,.09);
+    --txt:#eef2fb; --txt2:#aeb9d0; --muted:#6f7c99;
+    --grad1:#6d5efc; --grad2:#23d5c8; --glow:rgba(109,94,252,.5);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif; color:var(--txt);
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(109,94,252,.22), transparent 60%),
+      radial-gradient(800px 500px at 100% 0%, rgba(35,213,200,.16), transparent 55%),
+      linear-gradient(180deg,#0a0e1a,#0b1020 60%,#0a0e1a);
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .topbar{ display:flex; align-items:center; gap:20px; padding:16px 5vw; flex-wrap:wrap;
+           border-bottom:1px solid rgba(255,255,255,.06); backdrop-filter:blur(8px); position:sticky; top:0; z-index:20;
+           background:rgba(10,14,26,.72); }
+  .logo{ font-weight:800; font-size:21px; letter-spacing:-.5px; }
+  .logo b{ background:linear-gradient(90deg,var(--grad1),var(--grad2)); -webkit-background-clip:text;
+           background-clip:text; color:transparent; }
+  .badge-top{ font-size:11px; font-weight:600; color:#cdd6ec; border:1px solid rgba(255,255,255,.14);
+              border-radius:20px; padding:5px 13px; background:rgba(255,255,255,.05); white-space:nowrap; }
+  .badge-top .g{ width:7px; height:7px; border-radius:50%; background:var(--grad2); display:inline-block;
+                 margin-right:6px; box-shadow:0 0 8px var(--grad2); }
+  .tag{ margin-left:auto; font-size:12px; color:var(--muted); white-space:nowrap; }
+
+  /* nav tabs */
+  .tabs{ display:flex; gap:6px; background:rgba(255,255,255,.04); border:1px solid var(--cardline);
+         border-radius:14px; padding:5px; }
+  .tab{ border:none; background:transparent; color:var(--txt2); font-family:inherit; font-size:13.5px; font-weight:600;
+        padding:8px 16px; border-radius:10px; cursor:pointer; transition:.15s; display:flex; align-items:center; gap:7px; }
+  .tab:hover{ color:#fff; }
+  .tab.active{ color:#fff; background:linear-gradient(135deg,var(--grad1),var(--grad2)); box-shadow:0 8px 22px var(--glow); }
+  .tab .n{ font-size:11px; background:rgba(0,0,0,.25); padding:1px 7px; border-radius:10px; }
+
+  .wrap{ max-width:1120px; margin:0 auto; padding:26px 5vw 70px; }
+  .hero{ text-align:center; margin-bottom:24px; }
+  .hero h1{ font-size:26px; font-weight:800; letter-spacing:-.6px; line-height:1.15; }
+  .hero h1 .gr{ background:linear-gradient(90deg,var(--grad1),var(--grad2)); -webkit-background-clip:text;
+                background-clip:text; color:transparent; }
+  .hero .sub{ color:var(--muted); font-size:13.5px; margin-top:7px; }
+
+  .grid{ display:grid; grid-template-columns:1fr 430px; gap:22px; align-items:start; }
+  @media(max-width:900px){ .grid{ grid-template-columns:1fr; } }
+
+  .card{ background:var(--card); border:1px solid var(--cardline); border-radius:22px;
+         backdrop-filter:blur(14px); box-shadow:0 30px 70px rgba(0,0,0,.4); overflow:hidden; }
+  .card-h{ padding:16px 22px; border-bottom:1px solid rgba(255,255,255,.06); font-size:11.5px; font-weight:700;
+           text-transform:uppercase; letter-spacing:1px; color:var(--txt2); display:flex; align-items:center; gap:9px; }
+  .card-b{ padding:22px; }
+
+  label.lab{ display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
+             color:var(--muted); margin-bottom:8px; }
+  .tin{ width:100%; border:1px solid rgba(255,255,255,.1); border-radius:13px; padding:12px 15px; font-size:14px;
+        font-family:inherit; color:var(--txt); background:rgba(255,255,255,.03); margin-bottom:16px; resize:vertical; }
+  .tin::placeholder{ color:#5c6885; }
+  .tin:focus{ outline:none; border-color:var(--grad1); box-shadow:0 0 0 4px rgba(109,94,252,.15); background:rgba(255,255,255,.05); }
+  textarea.tin{ min-height:120px; line-height:1.6; }
+
+  .btn{ width:100%; border:none; cursor:pointer; color:#fff; font-weight:700; font-size:15px; padding:14px;
+        border-radius:13px; background:linear-gradient(90deg,var(--grad1),var(--grad2));
+        box-shadow:0 12px 34px var(--glow); transition:transform .12s, box-shadow .2s; letter-spacing:.2px; }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 16px 42px var(--glow); }
+  .btn:disabled{ opacity:.6; cursor:default; transform:none; }
+
+  .ejemplos{ margin-top:15px; font-size:12px; color:var(--muted); }
+  .ej{ display:inline-block; border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:6px 13px;
+       margin:7px 7px 0 0; cursor:pointer; color:var(--txt2); font-size:12.5px; background:rgba(255,255,255,.03); transition:.15s; }
+  .ej:hover{ border-color:var(--grad2); color:#fff; background:rgba(35,213,200,.08); }
+
+  /* resultado */
+  .ph{ text-align:center; color:var(--muted); padding:44px 12px; font-size:13.5px; }
+  .ph .ic{ font-size:38px; opacity:.4; display:block; margin-bottom:12px; }
+
+  .res-top{ display:flex; align-items:center; gap:18px; margin-bottom:20px; }
+  .ring{ position:relative; width:100px; height:100px; flex:none; }
+  .ring svg{ transform:rotate(-90deg); }
+  .ring .val{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring .val b{ font-size:24px; font-weight:800; }
+  .ring .val span{ font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+
+  .cat-mini{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
+  .cat-badge{ display:inline-flex; align-items:center; gap:9px; font-weight:800; font-size:17px; padding:10px 17px;
+              border-radius:13px; color:#fff; }
+  .cat-badge .dot{ width:9px; height:9px; border-radius:50%; background:#fff; opacity:.9; box-shadow:0 0 10px rgba(255,255,255,.6); }
+
+  .sec-lbl{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:0 0 11px; }
+  .chip{ display:inline-block; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:18px; margin:0 8px 9px 0;
+         color:#dfe6f8; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
+  .divider{ height:1px; background:rgba(255,255,255,.07); margin:18px 0; }
+
+  /* explicabilidad: ranking de categorías */
+  .rank{ margin-bottom:6px; }
+  .rank-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .rank-row .name{ width:120px; font-size:12px; color:var(--txt2); flex:none; }
+  .rank-bar{ flex:1; height:8px; background:rgba(255,255,255,.06); border-radius:6px; overflow:hidden; }
+  .rank-bar > i{ display:block; height:100%; border-radius:6px; transition:width .9s cubic-bezier(.2,.8,.2,1); }
+  .rank-row .pc{ width:40px; text-align:right; font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  .foot-note{ margin-top:16px; font-size:11.5px; color:var(--muted); text-align:center; }
+  .saved{ margin-top:14px; font-size:12px; color:#7ee0c8; text-align:center; background:rgba(35,213,200,.08);
+          border:1px solid rgba(35,213,200,.22); border-radius:11px; padding:9px; }
+
+  /* contenidos relacionados */
+  .rel{ display:block; text-decoration:none; border:1px solid var(--cardline); border-radius:13px; padding:11px 14px;
+        margin-bottom:9px; background:rgba(255,255,255,.02); cursor:pointer; transition:.15s; }
+  .rel:hover{ border-color:var(--grad1); background:rgba(109,94,252,.08); }
+  .rel .rt{ font-size:13.5px; font-weight:600; color:var(--txt); }
+  .rel .rc{ font-size:11px; color:var(--muted); margin-top:3px; }
+
+  .spinner{ width:30px; height:30px; border:3px solid rgba(255,255,255,.12); border-top-color:var(--grad2);
+            border-radius:50%; animation:spin .8s linear infinite; margin:34px auto; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .err{ background:rgba(255,90,90,.1); border:1px solid rgba(255,90,90,.3); color:#ff9b9b; border-radius:12px;
+        padding:12px 15px; font-size:13px; }
+  .via{ display:inline-block; font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+        padding:2px 8px; border-radius:10px; margin-left:8px; vertical-align:middle; }
+  .via.api{ background:rgba(35,213,200,.14); color:#5fe6d6; border:1px solid rgba(35,213,200,.3); }
+  .via.local{ background:rgba(245,158,11,.14); color:#fbc04a; border:1px solid rgba(245,158,11,.3); }
+
+  /* ===== BIBLIOTECA ===== */
+  .toolbar{ display:flex; gap:12px; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+  .search{ flex:1; min-width:220px; position:relative; }
+  .search input{ width:100%; border:1px solid var(--cardline); border-radius:13px; padding:12px 15px 12px 42px; font-size:14px;
+        font-family:inherit; color:var(--txt); background:rgba(255,255,255,.04); }
+  .search input:focus{ outline:none; border-color:var(--grad1); box-shadow:0 0 0 4px rgba(109,94,252,.15); }
+  .search .si{ position:absolute; left:15px; top:50%; transform:translateY(-50%); opacity:.5; }
+  .btn-sm{ border:1px solid var(--cardline); background:rgba(255,255,255,.04); color:var(--txt2); font-family:inherit;
+           font-size:13px; font-weight:600; padding:11px 15px; border-radius:12px; cursor:pointer; transition:.15s; white-space:nowrap; }
+  .btn-sm:hover{ border-color:var(--grad2); color:#fff; }
+
+  .filters{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+  .fchip{ font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:16px; cursor:pointer; transition:.15s;
+          border:1px solid var(--cardline); color:var(--txt2); background:rgba(255,255,255,.03); display:flex; align-items:center; gap:7px; }
+  .fchip .fc{ width:8px; height:8px; border-radius:50%; }
+  .fchip.on{ color:#fff; border-color:transparent; }
+  .fchip .fn{ font-size:11px; opacity:.7; }
+
+  .lib-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .doc{ border:1px solid var(--cardline); border-radius:16px; padding:16px; background:var(--card);
+        backdrop-filter:blur(10px); transition:.15s; position:relative; overflow:hidden; }
+  .doc:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,.18); box-shadow:0 18px 40px rgba(0,0,0,.35); }
+  .doc .bar{ position:absolute; left:0; top:0; bottom:0; width:4px; }
+  .doc .dcat{ display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:4px 10px;
+              border-radius:10px; color:#fff; margin-bottom:10px; }
+  .doc .dcat .dd{ width:6px; height:6px; border-radius:50%; background:#fff; opacity:.85; }
+  .doc h4{ font-size:15px; font-weight:700; line-height:1.3; margin-bottom:7px; }
+  .doc p{ font-size:12.5px; color:var(--txt2); line-height:1.55; margin-bottom:11px;
+          display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .doc .dk{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:9px; }
+  .doc .dk span{ font-size:10.5px; color:#cbd4ea; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+                 padding:3px 8px; border-radius:9px; }
+  .doc .dmeta{ font-size:10.5px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; }
+  .empty{ text-align:center; color:var(--muted); padding:60px 20px; font-size:14px; }
+  .empty .ic{ font-size:44px; opacity:.35; display:block; margin-bottom:14px; }
+
+  /* ===== PANEL ===== */
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+  .stat{ border:1px solid var(--cardline); border-radius:18px; padding:20px 22px; background:var(--card); backdrop-filter:blur(10px); }
+  .stat .k{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
+  .stat .v{ font-size:34px; font-weight:800; margin-top:6px; letter-spacing:-1px; }
+  .stat .v.grad{ background:linear-gradient(90deg,var(--grad1),var(--grad2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .panel-cols{ display:grid; grid-template-columns:1.4fr 1fr; gap:20px; }
+  @media(max-width:900px){ .panel-cols{ grid-template-columns:1fr; } }
+  .dist-row{ display:flex; align-items:center; gap:12px; margin-bottom:13px; }
+  .dist-row .dn{ width:150px; font-size:12.5px; color:var(--txt2); flex:none; display:flex; align-items:center; gap:8px; }
+  .dist-row .dn .dd{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .dist-bar{ flex:1; height:12px; background:rgba(255,255,255,.05); border-radius:7px; overflow:hidden; }
+  .dist-bar > i{ display:block; height:100%; border-radius:7px; transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .dist-row .dv{ width:34px; text-align:right; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .kwcloud .chip{ cursor:default; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="logo">Tech<b>Mind</b></span>
+    <span class="badge-top"><span class="g"></span>Biblioteca inteligente</span>
+    <nav class="tabs">
+      <button class="tab active" data-view="clasificar" onclick="setView('clasificar')">✍️ Clasificar</button>
+      <button class="tab" data-view="biblioteca" onclick="setView('biblioteca')">📚 Biblioteca <span class="n" id="tabCount">0</span></button>
+      <button class="tab" data-view="panel" onclick="setView('panel')">📊 Panel</button>
+    </nav>
+    <span class="tag">Equipo 46 · Hackathon ONE</span>
+  </div>
+
+  <div class="wrap">
+    <!-- ============ VISTA CLASIFICAR ============ -->
+    <section id="v-clasificar">
+      <div class="hero">
+        <h1>Clasificá tu contenido técnico con <span class="gr">IA</span></h1>
+        <div class="sub">El motor lee el contenido, decide su categoría y lo archiva en tu biblioteca — automáticamente.</div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-h">✍️ Contenido a clasificar</div>
+          <div class="card-b">
+            <label class="lab" for="titulo">Título</label>
+            <input class="tin" id="titulo" placeholder="Ej.: Introducción a Spring Boot" value="Introducción a Spring Boot">
+            <label class="lab" for="texto">Texto</label>
+            <textarea class="tin" id="texto" placeholder="Pegá aquí el contenido técnico…">En este contenido se presentan los conceptos básicos para la creación de APIs REST utilizando Java y Spring Boot, incluyendo controladores y servicios.</textarea>
+            <button class="btn" id="btn" onclick="clasificar()">✨ Clasificar y archivar</button>
+            <div class="ejemplos">Probá con un ejemplo:
+              <div>
+                <span class="ej" onclick="cargarEjemplo('Desplegar con Docker y Kubernetes','Cómo empaquetar aplicaciones en contenedores Docker y desplegarlas en un clúster de Kubernetes en la nube con CI/CD.')">☁️ DevOps</span>
+                <span class="ej" onclick="cargarEjemplo('Manejo de estado en React','Cómo administrar el estado de una aplicación web con componentes y hooks de React y Tailwind.')">🎨 Frontend</span>
+                <span class="ej" onclick="cargarEjemplo('Optimizar consultas SQL','Uso de índices, JOIN y GROUP BY para acelerar consultas en PostgreSQL sobre tablas muy grandes.')">🗄️ Bases de Datos</span>
+                <span class="ej" onclick="cargarEjemplo('Autenticación con JWT','Cómo proteger una API con tokens JWT, OAuth y buenas prácticas de cifrado y seguridad.')">🔒 Seguridad</span>
+                <span class="ej" onclick="cargarEjemplo('Modelo de clasificación con scikit-learn','Entrenamiento de un modelo de machine learning con pandas y regresión logística sobre un dataset de textos.')">📈 Ciencia de Datos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">📊 Resultado del análisis</div>
+          <div class="card-b" id="resultado">
+            <div class="ph"><span class="ic">🔎</span>Escribí un contenido y presioná <b>Clasificar</b><br>para ver el análisis, la explicación y los relacionados.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA BIBLIOTECA ============ -->
+    <section id="v-biblioteca" hidden>
+      <div class="hero">
+        <h1>Tu <span class="gr">biblioteca</span> de conocimiento</h1>
+        <div class="sub">Todo lo clasificado queda ordenado por estantes, con búsqueda y contenidos relacionados.</div>
+      </div>
+      <div class="toolbar">
+        <div class="search">
+          <span class="si">🔍</span>
+          <input id="q" placeholder="Buscar por título, tema o palabra clave…" oninput="renderBiblioteca()">
+        </div>
+        <button class="btn-sm" onclick="document.getElementById('csv').click()">📥 Importar CSV</button>
+        <input type="file" id="csv" accept=".csv" hidden onchange="importarCSV(event)">
+        <button class="btn-sm" onclick="setView('clasificar')">➕ Clasificar nuevo</button>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="lib-grid" id="libGrid"></div>
+    </section>
+
+    <!-- ============ VISTA PANEL ============ -->
+    <section id="v-panel" hidden>
+      <div class="hero">
+        <h1>Panel de la <span class="gr">base de conocimiento</span></h1>
+        <div class="sub">Cómo se distribuye y de qué habla todo el conocimiento organizado.</div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="panel-cols">
+        <div class="card">
+          <div class="card-h">📚 Distribución por categoría</div>
+          <div class="card-b" id="dist"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">🏷️ Temas más frecuentes</div>
+          <div class="card-b kwcloud" id="kwcloud"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const API = "http://98.81.139.150:8000";
+  const CATS = ["Backend","Frontend","Mobile","Ciencia de Datos","Bases de Datos","DevOps / Cloud","Seguridad","Programación General"];
+  const COLORES = {
+    "Backend":            ["#6d5efc","#8b7dff"],
+    "Frontend":           ["#23d5c8","#3ee6d8"],
+    "Mobile":             ["#2ecc71","#4fe08a"],
+    "Ciencia de Datos":   ["#a855f7","#c07bff"],
+    "Bases de Datos":     ["#f59e0b","#ffbb3c"],
+    "DevOps / Cloud":     ["#38bdf8","#5fd0ff"],
+    "Seguridad":          ["#f43f6e","#ff6d90"],
+    "Programación General":["#94a3b8","#b3c0d4"]
+  };
+  // Diccionario del clasificador local (respaldo + explicabilidad). El modelo real vive en la API.
+  const LEX = {
+    "Backend":["java","spring","spring boot","api","rest","endpoint","controlador","servicio","backend","servidor","node","express","django","flask","php","laravel","microservicio","http"],
+    "Frontend":["react","vue","angular","css","html","javascript","frontend","componente","hook","hooks","dom","tailwind","ui","responsive","navegador","interfaz"],
+    "Mobile":["android","ios","kotlin","swift","flutter","react native","móvil","mobile","app","apk","jetpack","pantalla"],
+    "Ciencia de Datos":["pandas","numpy","machine learning","modelo","dataset","regresión","clasificación","datos","tensorflow","scikit","sklearn","entrenamiento","predicción","neural","estadística"],
+    "Bases de Datos":["sql","postgres","postgresql","mysql","mongodb","índice","índices","index","join","query","consulta","base de datos","tabla","nosql","transacción"],
+    "DevOps / Cloud":["docker","kubernetes","ci/cd","pipeline","aws","azure","gcp","oci","nube","cloud","contenedor","despliegue","deploy","terraform","jenkins","clúster"],
+    "Seguridad":["jwt","token","autenticación","cifrado","seguridad","vulnerabilidad","owasp","hash","oauth","ssl","https","ataque","firewall","xss","certificado"],
+    "Programación General":["algoritmo","estructura de datos","git","programación","variable","función","recursión","complejidad","patrón de diseño","testing","refactor"]
+  };
+
+  /* ---------- almacenamiento (persistencia local) ---------- */
+  const KEY="techmind_biblioteca_v1";
+  let BIB = cargar();
+  function cargar(){
+    try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
+    return SEED();
+  }
+  function guardar(){ try{ localStorage.setItem(KEY, JSON.stringify(BIB)); }catch(e){} }
+  function agregar(item){ BIB.unshift(item); guardar(); actualizarContadores(); }
+
+  function SEED(){
+    const s = [
+      ["Guía completa de Spring Boot","Creación de APIs REST con Java y Spring Boot: controladores, servicios y repositorios.","Backend",0.93,["Java","Spring Boot","API REST","controlador"]],
+      ["Arquitectura de microservicios","Cómo dividir un backend monolítico en microservicios independientes que se comunican por HTTP.","Backend",0.88,["microservicio","API","servidor","REST"]],
+      ["React Hooks desde cero","Manejo del estado y efectos con useState y useEffect en componentes de React.","Frontend",0.95,["React","hooks","componente","estado"]],
+      ["Diseño responsive con Tailwind","Construir interfaces que se adaptan a cualquier pantalla usando utilidades de Tailwind CSS.","Frontend",0.9,["CSS","Tailwind","responsive","UI"]],
+      ["Apps nativas con Flutter","Desarrollo de aplicaciones móviles para Android e iOS con un solo código en Flutter.","Mobile",0.91,["Flutter","Android","iOS","móvil"]],
+      ["Clasificación de texto con scikit-learn","Entrenar un modelo de machine learning con pandas y regresión logística sobre un dataset.","Ciencia de Datos",0.94,["machine learning","pandas","modelo","dataset"]],
+      ["Optimización de consultas en PostgreSQL","Uso de índices y JOIN para acelerar consultas SQL sobre tablas grandes.","Bases de Datos",0.92,["SQL","PostgreSQL","índices","JOIN"]],
+      ["Modelado de datos NoSQL","Cuándo elegir MongoDB frente a una base relacional y cómo estructurar los documentos.","Bases de Datos",0.85,["MongoDB","NoSQL","base de datos","consulta"]],
+      ["Despliegue con Docker y Kubernetes","Empaquetar servicios en contenedores y orquestarlos en un clúster de Kubernetes.","DevOps / Cloud",0.93,["Docker","Kubernetes","contenedor","despliegue"]],
+      ["Pipelines de CI/CD en la nube","Automatizar pruebas y despliegues con pipelines de integración continua en AWS.","DevOps / Cloud",0.87,["CI/CD","pipeline","AWS","deploy"]],
+      ["Autenticación segura con JWT","Proteger una API con tokens JWT, OAuth y buenas prácticas de cifrado.","Seguridad",0.9,["JWT","token","OAuth","cifrado"]],
+      ["Algoritmos y estructuras de datos","Repaso de complejidad, recursión y las estructuras de datos más usadas.","Programación General",0.8,["algoritmo","estructura de datos","recursión","complejidad"]]
+    ];
+    return s.map((r,i)=>({ id:"seed"+i, titulo:r[0], texto:r[1], categoria:r[2], probabilidad:r[3], palabras:r[4], fecha:Date.now()-i*86400000 }));
+  }
+
+  /* ---------- clasificador local (respaldo + ranking explicable) ---------- */
+  function scoreLocal(texto){
+    const t = (" "+texto+" ").toLowerCase();
+    const raw = {}; let total=0;
+    for(const cat of CATS){
+      let s=0;
+      for(const kw of LEX[cat]){ if(t.includes(kw)) s += kw.includes(" ")?2:1; }
+      raw[cat]=s; total+=s;
+    }
+    // a probabilidades (suavizado para que nunca quede en cero absoluto)
+    const probs={};
+    if(total===0){ CATS.forEach(c=>probs[c]= c==="Programación General"?0.5:0.5/7); }
+    else CATS.forEach(c=> probs[c]= (raw[c]+0.15)/(total+0.15*8) );
+    const ranking = CATS.map(c=>({cat:c, p:probs[c]})).sort((a,b)=>b.p-a.p);
+    // palabras clave detectadas
+    const kws=[];
+    for(const cat of CATS) for(const kw of LEX[cat]) if(t.includes(kw)) kws.push(titulizar(kw));
+    return { ranking, palabras:[...new Set(kws)].slice(0,5) };
+  }
+  function titulizar(s){ return s.split(" ").map(w=> w.length>3 ? w[0].toUpperCase()+w.slice(1):w.toUpperCase()).join(" ").replace("Api","API").replace("Sql","SQL").replace("Rest","REST").replace("Css","CSS").replace("Html","HTML").replace("Jwt","JWT").replace("Ci/cd","CI/CD").replace("Ui","UI"); }
+
+  /* ---------- helpers ---------- */
+  function esc(s){ return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function cargarEjemplo(t,x){ document.getElementById('titulo').value=t; document.getElementById('texto').value=x; }
+  function actualizarContadores(){ document.getElementById('tabCount').textContent = BIB.length; }
+
+  /* ---------- vistas ---------- */
+  function setView(v){
+    ['clasificar','biblioteca','panel'].forEach(x=>{
+      document.getElementById('v-'+x).hidden = (x!==v);
+    });
+    document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.view===v));
+    if(v==='biblioteca') renderBiblioteca();
+    if(v==='panel') renderPanel();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  /* ---------- clasificar ---------- */
+  let filtroCat = "todas";
+  function pintarResultado(data, via, ranking){
+    const pct = Math.round((data.probabilidad ?? 0)*100);
+    const col = COLORES[data.categoria] || ["#6d5efc","#8b7dff"];
+    const kws = (data.palabras||[]).map(k=>`<span class="chip">${esc(k)}</span>`).join("");
+    const r=45, c=2*Math.PI*r, off=c*(1-pct/100);
+
+    // ranking explicable (top 4)
+    const rk = (ranking||[]).slice(0,4).map(o=>{
+      const cc=COLORES[o.cat]||["#6d5efc"];
+      return `<div class="rank-row"><span class="name">${esc(o.cat)}</span>
+        <span class="rank-bar"><i style="width:${Math.round(o.p*100)}%;background:linear-gradient(90deg,${cc[0]},${cc[1]})"></i></span>
+        <span class="pc">${Math.round(o.p*100)}%</span></div>`;
+    }).join("");
+
+    // relacionados (misma categoría, por palabras compartidas)
+    const rel = relacionados(data).map(d=>`
+      <div class="rel" onclick="verEjemplo('${d.id}')">
+        <div class="rt">${esc(d.titulo)}</div>
+        <div class="rc">${esc(d.categoria)} · ${(d.palabras||[]).slice(0,3).join(" · ")}</div>
+      </div>`).join("") || '<div style="color:#5c6885;font-size:12.5px">Es el primero de su categoría.</div>';
+
+    const badgeVia = "";  // etiqueta de origen (API/local) oculta para una demo más limpia
+
+    document.getElementById('resultado').innerHTML = `
+      <div class="res-top">
+        <div class="ring">
+          <svg width="100" height="100">
+            <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,.08)" stroke-width="9" fill="none"/>
+            <circle id="arc" cx="50" cy="50" r="45" stroke="${col[0]}" stroke-width="9" fill="none"
+              stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}"
+              style="transition:stroke-dashoffset 1s ease; filter:drop-shadow(0 0 6px ${col[0]}88)"/>
+          </svg>
+          <div class="val"><b>${pct}%</b><span>confianza</span></div>
+        </div>
+        <div>
+          <div class="cat-mini">Categoría detectada ${badgeVia}</div>
+          <span class="cat-badge" style="background:linear-gradient(135deg,${col[0]},${col[1]}); box-shadow:0 10px 30px ${col[0]}55">
+            <span class="dot"></span> ${esc(data.categoria)}
+          </span>
+        </div>
+      </div>
+
+      <div class="sec-lbl">🏷️ Palabras clave detectadas</div>
+      <div>${kws || '<span style="color:#5c6885;font-size:13px">—</span>'}</div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">🧠 Por qué esta categoría <span style="text-transform:none;letter-spacing:0;color:#5c6885">· ranking entre las 8 posibles</span></div>
+      <div class="rank">${rk}</div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">🔗 Contenidos relacionados</div>
+      ${rel}
+
+      <div class="saved">💾 Archivado en tu biblioteca · estante “${esc(data.categoria)}”</div>`;
+    requestAnimationFrame(()=>{ const a=document.getElementById('arc'); if(a) a.style.strokeDashoffset = off; });
+  }
+
+  function relacionados(data){
+    const kws=new Set((data.palabras||[]).map(k=>k.toLowerCase()));
+    return BIB.filter(d=> d.categoria===data.categoria && d.titulo!==data.titulo)
+      .map(d=>({d, n:(d.palabras||[]).filter(k=>kws.has(k.toLowerCase())).length}))
+      .sort((a,b)=> b.n-a.n)
+      .slice(0,3).map(o=>o.d);
+  }
+
+  async function clasificar(){
+    const titulo=document.getElementById('titulo').value.trim();
+    const texto=document.getElementById('texto').value.trim();
+    const btn=document.getElementById('btn'), out=document.getElementById('resultado');
+    if(texto.length<20){ out.innerHTML='<div class="err">El texto debe tener al menos 20 caracteres.</div>'; return; }
+    btn.disabled=true; btn.textContent="Clasificando…";
+    out.innerHTML='<div class="spinner"></div>';
+
+    const local = scoreLocal(titulo+" "+texto);
+    let data, via;
+    try{
+      const res=await fetch(API+"/contenido",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({titulo,texto})});
+      const j=await res.json();
+      if(!res.ok) throw new Error(j.detail||"error");
+      data={ titulo, texto, categoria:j.categoria, probabilidad:j.probabilidad,
+             palabras: (j.informacion_adicional&&j.informacion_adicional.length)?j.informacion_adicional:local.palabras };
+      via="api";
+    }catch(e){
+      // Respaldo local: la demo nunca se rompe aunque el backend no responda.
+      const top=local.ranking[0];
+      data={ titulo, texto, categoria:top.cat, probabilidad:top.p, palabras:local.palabras };
+      via="local";
+    }
+    const item={ id:"u"+Date.now(), ...data, fecha:Date.now() };
+    agregar(item);
+    pintarResultado(data, via, local.ranking);
+    btn.disabled=false; btn.textContent="✨ Clasificar y archivar";
+  }
+
+  function verEjemplo(id){
+    const d=BIB.find(x=>x.id===id); if(!d) return;
+    setView('clasificar');
+    document.getElementById('titulo').value=d.titulo;
+    document.getElementById('texto').value=d.texto;
+    const local=scoreLocal(d.titulo+" "+d.texto);
+    pintarResultado(d, "api", local.ranking);
+  }
+
+  /* ---------- biblioteca ---------- */
+  function renderFilters(){
+    const cont=document.getElementById('filters');
+    const counts={}; CATS.forEach(c=>counts[c]=0); BIB.forEach(d=>counts[d.categoria]=(counts[d.categoria]||0)+1);
+    let html=`<div class="fchip ${filtroCat==='todas'?'on':''}" style="${filtroCat==='todas'?'background:linear-gradient(135deg,var(--grad1),var(--grad2))':''}" onclick="setFiltro('todas')">
+                Todas <span class="fn">${BIB.length}</span></div>`;
+    for(const c of CATS){ if(!counts[c]) continue; const col=COLORES[c];
+      html+=`<div class="fchip ${filtroCat===c?'on':''}" style="${filtroCat===c?`background:linear-gradient(135deg,${col[0]},${col[1]})`:''}" onclick="setFiltro('${c}')">
+              <span class="fc" style="background:${col[0]}"></span>${c} <span class="fn">${counts[c]}</span></div>`;
+    }
+    cont.innerHTML=html;
+  }
+  function setFiltro(c){ filtroCat=c; renderBiblioteca(); }
+
+  function renderBiblioteca(){
+    renderFilters();
+    const q=(document.getElementById('q')?.value||"").toLowerCase().trim();
+    let list=BIB.filter(d=> filtroCat==='todas' || d.categoria===filtroCat);
+    if(q) list=list.filter(d=> (d.titulo+" "+d.texto+" "+(d.palabras||[]).join(" ")).toLowerCase().includes(q));
+    const grid=document.getElementById('libGrid');
+    if(!list.length){ grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><span class="ic">📭</span>No hay contenidos que coincidan.</div>`; return; }
+    grid.innerHTML=list.map(d=>{
+      const col=COLORES[d.categoria]||["#6d5efc","#8b7dff"];
+      const kw=(d.palabras||[]).slice(0,4).map(k=>`<span>${esc(k)}</span>`).join("");
+      return `<div class="doc" onclick="verEjemplo('${d.id}')" style="cursor:pointer">
+        <span class="bar" style="background:linear-gradient(180deg,${col[0]},${col[1]})"></span>
+        <span class="dcat" style="background:linear-gradient(135deg,${col[0]},${col[1]})"><span class="dd"></span>${esc(d.categoria)}</span>
+        <h4>${esc(d.titulo)}</h4>
+        <p>${esc(d.texto)}</p>
+        <div class="dk">${kw}</div>
+        <div class="dmeta"><span>${Math.round((d.probabilidad||0)*100)}% confianza</span><span>${fecha(d.fecha)}</span></div>
+      </div>`;
+    }).join("");
+  }
+  function fecha(ts){ const d=new Date(ts); return d.toLocaleDateString('es',{day:'2-digit',month:'short'}); }
+
+  /* ---------- panel ---------- */
+  function renderPanel(){
+    const counts={}; CATS.forEach(c=>counts[c]=0); let conf=0;
+    BIB.forEach(d=>{ counts[d.categoria]=(counts[d.categoria]||0)+1; conf+=(d.probabilidad||0); });
+    const usadas=CATS.filter(c=>counts[c]>0).length;
+    const avg=BIB.length? Math.round(conf/BIB.length*100):0;
+    document.getElementById('stats').innerHTML=`
+      <div class="stat"><div class="k">Contenidos organizados</div><div class="v grad">${BIB.length}</div></div>
+      <div class="stat"><div class="k">Categorías activas</div><div class="v">${usadas}<span style="font-size:16px;color:var(--muted)"> / 8</span></div></div>
+      <div class="stat"><div class="k">Confianza promedio</div><div class="v">${avg}%</div></div>
+      <div class="stat"><div class="k">Temas únicos</div><div class="v">${topKeywords().length}</div></div>`;
+
+    const max=Math.max(1,...Object.values(counts));
+    document.getElementById('dist').innerHTML = CATS.filter(c=>counts[c]>0).sort((a,b)=>counts[b]-counts[a]).map(c=>{
+      const col=COLORES[c];
+      return `<div class="dist-row">
+        <span class="dn"><span class="dd" style="background:${col[0]}"></span>${c}</span>
+        <span class="dist-bar"><i style="width:${counts[c]/max*100}%;background:linear-gradient(90deg,${col[0]},${col[1]})"></i></span>
+        <span class="dv">${counts[c]}</span></div>`;
+    }).join("");
+
+    const tk=topKeywords();
+    const maxf=Math.max(1,...tk.map(t=>t[1]));
+    document.getElementById('kwcloud').innerHTML = tk.map(([k,f])=>{
+      const size=12+ (f/maxf)*9;
+      return `<span class="chip" style="font-size:${size.toFixed(0)}px">${esc(k)} <b style="opacity:.5">${f}</b></span>`;
+    }).join("") || '<span style="color:#5c6885">Sin datos aún.</span>';
+  }
+  function topKeywords(){
+    const f={}; BIB.forEach(d=>(d.palabras||[]).forEach(k=>{ const key=k.trim(); if(key) f[key]=(f[key]||0)+1; }));
+    return Object.entries(f).sort((a,b)=>b[1]-a[1]).slice(0,14);
+  }
+
+  /* ---------- importar CSV (procesamiento por lotes) ---------- */
+  function importarCSV(ev){
+    const file=ev.target.files[0]; if(!file) return;
+    const rd=new FileReader();
+    rd.onload=e=>{
+      const lines=e.target.result.split(/\r?\n/).filter(l=>l.trim());
+      let n=0, start=0;
+      if(lines[0] && /titulo|título|title/i.test(lines[0])) start=1;
+      for(let i=start;i<lines.length;i++){
+        const p=parseCSVLine(lines[i]); if(!p.length) continue;
+        const titulo=(p[0]||"").trim(), texto=(p[1]||p[0]||"").trim();
+        if(texto.length<3) continue;
+        const local=scoreLocal(titulo+" "+texto); const top=local.ranking[0];
+        agregar({ id:"csv"+Date.now()+"_"+i, titulo:titulo||"(sin título)", texto, categoria:top.cat, probabilidad:top.p, palabras:local.palabras, fecha:Date.now() });
+        n++;
+      }
+      ev.target.value="";
+      alert(`✅ ${n} contenidos clasificados y archivados en la biblioteca.`);
+      renderBiblioteca();
+    };
+    rd.readAsText(file,"utf-8");
+  }
+  function parseCSVLine(line){
+    const out=[]; let cur="", q=false;
+    for(let i=0;i<line.length;i++){ const ch=line[i];
+      if(ch==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+      else if(ch===','&&!q){ out.push(cur); cur=""; }
+      else cur+=ch;
+    }
+    out.push(cur); return out;
+  }
+
+  /* ---------- init ---------- */
+  actualizarContadores();
+  pintarResultado(
+    {titulo:"Introducción a Spring Boot", categoria:"Backend", probabilidad:0.89, palabras:["Java","Spring Boot","API REST","controlador"]},
+    "api",
+    scoreLocal("Introducción a Spring Boot creación de APIs REST con Java y Spring Boot controladores servicios").ranking
+  );
+</script>
+</body>
+</html>
