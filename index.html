@@ -113,7 +113,48 @@
         margin-bottom:9px; background:rgba(255,255,255,.02); cursor:pointer; transition:.15s; }
   .rel:hover{ border-color:var(--grad1); background:rgba(109,94,252,.08); }
   .rel .rt{ font-size:13.5px; font-weight:600; color:var(--txt); }
-  .rel .rc{ font-size:11px; color:var(--muted); margin-top:3px; }
+  .rel .rc{ font-size:11px; color:var(--muted); margin-top:5px; display:flex; align-items:center; gap:6px; }
+  .rel-h{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  /* El extracto es lo que convierte la tarjeta en algo legible: sin el, el
+     titulo solo no alcanza para decidir si el documento sirve. */
+  .rel .rx{ font-size:12px; line-height:1.5; color:#95a3bf; margin-top:6px;
+            display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+            line-clamp:2; overflow:hidden; }
+  .rel .sim{ flex:none; font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
+             color:#5fe6d6; background:rgba(35,213,200,.12); border:1px solid rgba(35,213,200,.28);
+             border-radius:8px; padding:2px 7px; }
+  .rel .rdot{ width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .rel-nota{ font-size:11px; color:#5c6885; text-align:right; margin-top:2px; }
+
+  /* asistente */
+  .chat-hilo{ display:flex; flex-direction:column; gap:12px; max-height:52vh; overflow-y:auto;
+              padding-right:4px; margin-bottom:14px; }
+  .burbuja{ max-width:82%; padding:11px 14px; border-radius:14px; font-size:13.5px; line-height:1.6; }
+  .burbuja.mia{ align-self:flex-end; background:linear-gradient(135deg,var(--grad1),var(--grad2));
+                color:#fff; border-bottom-right-radius:5px; }
+  .burbuja.suya{ align-self:flex-start; background:rgba(255,255,255,.03);
+                 border:1px solid var(--cardline); border-bottom-left-radius:5px; }
+  .burbuja.suya b{ color:var(--txt); }
+  .chat-envio{ display:flex; gap:10px; align-items:flex-end; }
+  .chat-envio .tin{ flex:1; margin:0; }
+  .chat-envio .btn{ width:auto; flex:none; padding:12px 22px; margin:0; }
+  /* Los terminos que empujaron la decision, con su aporte. Es la parte que
+     distingue esta respuesta de una redactada: son numeros del modelo. */
+  .pesos{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .peso{ font-size:11px; font-variant-numeric:tabular-nums; padding:3px 8px; border-radius:8px;
+         background:rgba(35,213,200,.1); border:1px solid rgba(35,213,200,.25); color:#5fe6d6; }
+  .peso b{ color:#8ff0e4; font-weight:700; }
+  .chat-meta{ font-size:11px; color:#5c6885; margin-top:8px; }
+  .chat-vacio{ color:#5c6885; font-size:13px; text-align:center; padding:26px 10px; line-height:1.6; }
+
+  /* cuenta */
+  .perfil{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--txt2);
+           background:rgba(255,255,255,.04); border:1px solid var(--cardline);
+           border-radius:999px; padding:4px 6px 4px 4px; }
+  .perfil img{ width:24px; height:24px; border-radius:50%; }
+  .perfil button{ background:none; border:none; color:var(--muted); cursor:pointer;
+                  font-size:13px; padding:0 4px; line-height:1; }
+  .perfil button:hover{ color:#ff9b9b; }
 
   .spinner{ width:30px; height:30px; border:3px solid rgba(255,255,255,.12); border-top-color:var(--grad2);
             border-radius:50%; animation:spin .8s linear infinite; margin:34px auto; }
@@ -209,8 +250,11 @@
       <button class="tab active" data-view="clasificar" onclick="setView('clasificar')">✍️ Clasificar</button>
       <button class="tab" data-view="biblioteca" onclick="setView('biblioteca')">📚 Biblioteca <span class="n" id="tabCount">0</span></button>
       <button class="tab" data-view="panel" onclick="setView('panel')">🗂️ Mis temas</button>
-        <button class="tab" data-view="modelo" onclick="setView('modelo')">📊 Dashboard</button>
+      <button class="tab" data-view="chat" onclick="setView('chat')">💬 Asistente</button>
+      <button class="tab" data-view="propios" onclick="setView('propios')">🧪 Categorías propias</button>
+      <button class="tab" data-view="modelo" onclick="setView('modelo')">📊 Dashboard</button>
     </nav>
+    <div id="cuenta"></div>
     <span class="tag">Equipo 46 · Hackathon ONE</span>
   </div>
 
@@ -239,6 +283,9 @@
                 <span class="ej" onclick="cargarEjemplo('Autenticación con JWT','Cómo proteger una API con tokens JWT, OAuth y buenas prácticas de cifrado y seguridad.')">🔒 Seguridad</span>
                 <span class="ej" onclick="cargarEjemplo('Modelo de clasificación con scikit-learn','Entrenamiento de un modelo de machine learning con pandas y regresión logística sobre un dataset de textos.')">📈 Ciencia de Datos</span>
               </div>
+            </div>
+            <div class="ejemplos" id="sugerencias" hidden>O explorá el histórico por término:
+              <div id="sugChips"></div>
             </div>
           </div>
         </div>
@@ -269,6 +316,81 @@
       </div>
       <div class="filters" id="filters"></div>
       <div class="lib-grid" id="libGrid"></div>
+    </section>
+
+    <!-- ============ VISTA ASISTENTE ============ -->
+    <section id="v-chat" hidden>
+      <div class="hero">
+        <h1>Preguntale al <span class="gr">modelo</span></h1>
+        <div class="sub">Explica cada clasificación con la evidencia que la sostiene: qué términos la empujaron, cuánto pesó cada uno y qué hay parecido en el histórico.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">💬 Conversación</div>
+        <div class="card-b">
+          <div id="chatHilo" class="chat-hilo"></div>
+          <div class="chat-envio">
+            <textarea class="tin" id="chatTexto" rows="2"
+              placeholder="Pegá un contenido técnico y preguntá por qué se clasifica así…"></textarea>
+            <button class="btn" id="chatBtn" onclick="enviarChat()">Enviar</button>
+          </div>
+          <div class="ejemplos">Probá con:
+            <div>
+              <span class="ej" onclick="chatEjemplo('Construcción de interfaces declarativas con Kotlin y Jetpack Compose, manejo del estado y ciclo de vida')">Jetpack Compose</span>
+              <span class="ej" onclick="chatEjemplo('cómo configuro un clúster de kubernetes con ingress y certificados TLS')">Kubernetes</span>
+              <span class="ej" onclick="chatEjemplo('optimizar consultas con índices y joins en PostgreSQL sobre tablas grandes')">PostgreSQL</span>
+              <span class="ej" onclick="chatEjemplo('receta de sopa de tomate con albahaca')">Algo ajeno al corpus</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA CATEGORIAS PROPIAS ============ -->
+    <section id="v-propios" hidden>
+      <div class="hero">
+        <h1>Entrená con <span class="gr">tus</span> categorías</h1>
+        <div class="sub">Las 8 de fábrica dicen <b>de qué habla</b> un contenido. A veces lo que hace falta saber es <b>qué es</b>. Subí un CSV con tus etiquetas y quedate con un modelo tuyo.</div>
+      </div>
+
+      <div class="panel-cols">
+        <div class="card">
+          <div class="card-h">📤 Entrenar</div>
+          <div class="card-b">
+            <div style="font-size:13px;color:var(--txt2);line-height:1.6;margin-bottom:14px">
+              El CSV necesita una columna de texto y otra de categoría.
+              Mínimo 40 filas, al menos 2 categorías y 5 ejemplos por categoría.
+            </div>
+            <button class="btn" id="btnEjemplo" onclick="entrenarEjemplo()">📄 Probar con una muestra del corpus</button>
+            <div style="font-size:12px;color:#5c6885;line-height:1.55;margin-top:8px">
+              592 documentos reales del propio corpus, etiquetados por su origen:
+              los de StackOverflow son <b>preguntas</b>, los de Medium son <b>artículos</b>.
+              Es una distinción de formato, no de tema — y las dos fuentes cubren
+              las 8 categorías por igual, así que ninguna reagrupación de las
+              etiquetas de fábrica puede producirla.
+            </div>
+            <label class="lab" style="margin-top:14px">O subí tu propio CSV</label>
+            <input class="tin" type="file" id="csvPropio" accept=".csv" onchange="entrenarPropio(event)">
+            <div id="entrenamiento" style="margin-top:14px"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">⚖️ Fábrica contra el tuyo</div>
+          <div class="card-b">
+            <div id="compararVacio" style="font-size:13px;color:#5c6885;line-height:1.6">
+              Entrená un modelo y acá vas a poder darle el mismo texto a los dos,
+              para ver en qué se diferencian.
+            </div>
+            <div id="compararCaja" hidden>
+              <label class="lab" for="textoPropio">Texto a clasificar</label>
+              <textarea class="tin" id="textoPropio" style="min-height:90px"></textarea>
+              <button class="btn" id="btnComparar" onclick="compararModelos()">Comparar los dos</button>
+              <div id="comparacion" style="margin-top:14px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ============ VISTA PANEL ============ -->
@@ -321,9 +443,14 @@
 <script>
   // La API vive en Render. Al abrir el archivo desde el disco o desde
   // localhost se usa la copia local, para poder desarrollar sin internet.
-  const API = ["localhost", "127.0.0.1", ""].includes(location.hostname)
+  //
+  // Se apunta a /v1 y no a las rutas sueltas: esas siguen respondiendo por
+  // compatibilidad, pero vienen con la cabecera Deprecation. Si la API se
+  // versiona, el primero que tiene que respetarlo es su propio front.
+  const BASE = ["localhost", "127.0.0.1", ""].includes(location.hostname)
     ? "http://127.0.0.1:8000"
     : "https://techmind-api-24gg.onrender.com";
+  const API = BASE + "/v1";
   const CATS = ["Backend","Frontend","Mobile","Ciencia de Datos","Bases de Datos","DevOps / Cloud","Seguridad","Programación General"];
   const COLORES = {
     "Backend":            ["#6d5efc","#8b7dff"],
@@ -347,8 +474,32 @@
     "Programación General":["algoritmo","estructura de datos","git","programación","variable","función","recursión","complejidad","patrón de diseño","testing","refactor"]
   };
 
+  /* ---------- cuenta de Google ----------
+     Pegar aca el ID de cliente para activarlo. Vacio, el boton no aparece:
+     antes que mostrar un acceso que no funciona, no se muestra ninguno.
+
+       console.cloud.google.com  >  APIs y servicios  >  Credenciales
+       Crear credenciales  >  ID de cliente de OAuth  >  Aplicacion web
+       Origenes autorizados: https://techmin-equipo46.vercel.app
+
+     PARA QUE SIRVE ACA. La biblioteca vive en el navegador, asi que dos
+     personas en la misma maquina comparten estanteria. Con la cuenta, cada
+     una tiene la suya: el identificador de Google se usa para separar el
+     almacenamiento, y nada mas.
+
+     Lo que NO es: autenticacion. El token se lee en el navegador para
+     mostrar el nombre y separar los datos locales; no se verifica su firma
+     ni se manda a la API, que no tiene cuentas ni datos privados. Para
+     proteger algo de verdad haria falta validarlo en el servidor. */
+  const GOOGLE_CLIENT_ID = "";
+
+  let CUENTA = null;
+  try{ CUENTA = JSON.parse(localStorage.getItem("techmind_cuenta") || "null"); }catch(e){}
+
   /* ---------- almacenamiento (persistencia local) ---------- */
-  const KEY="techmind_biblioteca_v1";
+  const BASE_KEY = "techmind_biblioteca_v1";
+  function claveBiblioteca(){ return CUENTA ? `${BASE_KEY}_${CUENTA.id}` : BASE_KEY; }
+  let KEY = claveBiblioteca();
   let BIB = cargar();
   function cargar(){
     try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
@@ -401,13 +552,74 @@
   function cargarEjemplo(t,x){ document.getElementById('titulo').value=t; document.getElementById('texto').value=x; }
   function actualizarContadores(){ document.getElementById('tabCount').textContent = BIB.length; }
 
+  /* ---------- cuenta ---------- */
+  function pintarCuenta(){
+    const caja = document.getElementById('cuenta');
+    if(CUENTA){
+      caja.innerHTML = `<div class="perfil" title="${esc(CUENTA.correo)}">
+        ${CUENTA.foto ? `<img src="${esc(CUENTA.foto)}" alt="">` : ""}
+        <span>${esc(CUENTA.nombre)}</span>
+        <button onclick="salirCuenta()" title="Salir">✕</button></div>`;
+    }else if(GOOGLE_CLIENT_ID){
+      caja.innerHTML = '<div id="botonGoogle"></div>';
+      if(window.google?.accounts?.id){
+        google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: entrarConGoogle});
+        google.accounts.id.renderButton(document.getElementById('botonGoogle'),
+          {theme:"filled_black", size:"medium", text:"signin", shape:"pill"});
+      }
+    }else{
+      caja.innerHTML = "";
+    }
+  }
+
+  /* El token viene firmado por Google, pero acá solo se lee la carga útil
+     para mostrar el nombre y separar la biblioteca. No se verifica la firma
+     ni se usa para dar acceso a nada: no habría con qué respaldarlo. */
+  function entrarConGoogle(respuesta){
+    try{
+      const carga = JSON.parse(decodeURIComponent(escape(
+        atob(respuesta.credential.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")))));
+      CUENTA = {id: carga.sub, nombre: carga.given_name || carga.name || "Cuenta",
+                correo: carga.email || "", foto: carga.picture || ""};
+      localStorage.setItem("techmind_cuenta", JSON.stringify(CUENTA));
+      cambiarBiblioteca();
+    }catch(e){ console.warn("no se pudo leer la credencial", e); }
+  }
+
+  function salirCuenta(){
+    CUENTA = null;
+    localStorage.removeItem("techmind_cuenta");
+    cambiarBiblioteca();
+  }
+
+  function cambiarBiblioteca(){
+    KEY = claveBiblioteca();
+    BIB = cargar();
+    actualizarContadores();
+    pintarCuenta();
+    if(!document.getElementById('v-biblioteca').hidden) renderBiblioteca();
+    if(!document.getElementById('v-panel').hidden) renderPanel();
+  }
+
   /* ---------- vistas ---------- */
-  function setView(v){
-    ['clasificar','biblioteca','panel','modelo'].forEach(x=>{
+  const VISTAS = ['clasificar','biblioteca','chat','propios','panel','modelo'];
+
+  /* Cada vista queda en el hash de la URL. Eso da tres cosas que antes no
+     habia: el boton atras del navegador funciona, la pestaña sobrevive a un
+     refresco, y se puede pasar un enlace directo a una vista concreta
+     --techmin-equipo46.vercel.app/#propios-- en vez de decirle a alguien
+     que entre y haga clic en la tercera pestaña. */
+  function setView(v, desdeHistorial){
+    if(!VISTAS.includes(v)) v = VISTAS[0];
+    if(!desdeHistorial && location.hash.slice(1) !== v){
+      history.pushState({vista:v}, "", "#" + v);
+    }
+    VISTAS.forEach(x=>{
       document.getElementById('v-'+x).hidden = (x!==v);
     });
     document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.view===v));
     if(v==='biblioteca') renderBiblioteca();
+    if(v==='chat') pintarChat();
     if(v==='panel') renderPanel();
     if(v==='modelo') renderModelo();
     window.scrollTo({top:0,behavior:'smooth'});
@@ -416,6 +628,7 @@
 
   /* ---------- modelo ---------- */
   let METRICAS = null;
+  let TOTAL_DOCS = 0;   // documentos del historico, para la nota de relacionados
 
   function filaBarra(nombre, valor, maximo, texto){
     const col = COLORES[nombre] || ["#6d5efc","#8b7dff"];
@@ -518,12 +731,37 @@
         <span class="pc">${Math.round(o.p*100)}%</span></div>`;
     }).join("");
 
-    // relacionados (misma categoría, por palabras compartidas)
-    const rel = relacionados(data).map(d=>`
-      <div class="rel" onclick="verEjemplo('${d.id}')">
-        <div class="rt">${esc(d.titulo)}</div>
-        <div class="rc">${esc(d.categoria)} · ${(d.palabras||[]).slice(0,3).join(" · ")}</div>
-      </div>`).join("") || '<div style="color:#5c6885;font-size:12.5px">Es el primero de su categoría.</div>';
+    // Relacionados del historico, tal como los devolvio el servidor. Solo se
+    // cae al calculo local cuando la API no respondio.
+    let rel, relNota;
+    if(data.relacionados){
+      rel = data.relacionados.map(d=>`
+        <div class="rel">
+          <div class="rel-h">
+            <div class="rt">${esc(d.titulo)}</div>
+            <span class="sim" title="similitud del coseno">${(d.similitud ?? 0).toFixed(2)}</span>
+          </div>
+          ${d.extracto ? `<div class="rx">${esc(d.extracto)}</div>` : ""}
+          <div class="rc"><span class="rdot" style="background:${(COLORES[d.categoria]||["#6d5efc"])[0]}"></span>${esc(d.categoria)}</div>
+        </div>`).join("");
+      relNota = `<div class="rel-nota">Comparado contra ${(TOTAL_DOCS||0).toLocaleString('es')} documentos del histórico</div>`;
+    }else if(data.vistaPrevia){
+      // El panel de bienvenida no clasifico nada todavia: no hay contra que
+      // comparar, y mostrar los de la biblioteca local seria inventarlos.
+      rel = '<div style="color:#5c6885;font-size:12.5px">Clasificá un contenido para ver los documentos del histórico que se le parecen.</div>';
+      relNota = "";
+    }else{
+      rel = relacionados(data).map(d=>`
+        <div class="rel" onclick="verEjemplo('${d.id}')">
+          <div class="rt">${esc(d.titulo)}</div>
+          <div class="rc">${esc(d.categoria)} · ${(d.palabras||[]).slice(0,3).join(" · ")}</div>
+        </div>`).join("");
+      relNota = `<div class="rel-nota">De tu biblioteca local · el servidor no respondió</div>`;
+    }
+    if(!rel){
+      rel = '<div style="color:#5c6885;font-size:12.5px">Sin coincidencias por encima del umbral de similitud.</div>';
+      relNota = "";
+    }
 
     const badgeVia = "";  // etiqueta de origen (API/local) oculta para una demo más limpia
 
@@ -556,9 +794,243 @@
       <div class="divider"></div>
       <div class="sec-lbl">🔗 Contenidos relacionados</div>
       ${rel}
+      ${relNota}
 
       <div class="saved">💾 Archivado en tu biblioteca · estante “${esc(data.categoria)}”</div>`;
     requestAnimationFrame(()=>{ const a=document.getElementById('arc'); if(a) a.style.strokeDashoffset = off; });
+  }
+
+  /* El ranking que muestra la barra "por que esta categoria" tiene que ser el
+     del modelo, no una cuenta de palabras hecha aca. La API devuelve la
+     ganadora aparte del resto, asi que se rearman en una sola lista.
+     ranking_categorias llega vacio cuando la confianza es tan alta que las
+     demas quedan por debajo del umbral: ahi la unica barra es la correcta. */
+  function rankingDelModelo(j){
+    if(!j.categoria) return null;
+    const resto = (j.ranking_categorias||[]).map(o=>({cat:o.categoria, p:o.probabilidad}));
+    return [{cat:j.categoria, p:j.probabilidad}, ...resto];
+  }
+
+  /* ---------- asistente ----------
+     La respuesta trae, aparte de la prosa, la evidencia que la sostiene:
+     categoria, probabilidad y los terminos que empujaron la decision con
+     cuanto aporto cada uno. Eso se pinta aparte, porque es lo que separa
+     una explicacion calculada de una redactada. */
+  let CHAT = [];   // historial, se manda para dar contexto a la respuesta
+
+  function pintarChat(){
+    const hilo = document.getElementById('chatHilo');
+    if(!CHAT.length){
+      hilo.innerHTML = `<div class="chat-vacio">Pegá un contenido técnico y el modelo te explica<br>por qué lo clasifica como lo clasifica.</div>`;
+      return;
+    }
+    hilo.innerHTML = CHAT.map(m=>{
+      if(m.rol === "user") return `<div class="burbuja mia">${esc(m.contenido)}</div>`;
+
+      const pesos = (m.terminos||[]).map(t=>
+        `<span class="peso">${esc(t.termino)} <b>${t.aporte>=0?"+":""}${t.aporte.toFixed(2)}</b></span>`).join("");
+      const meta = m.categoria
+        ? `<div class="chat-meta">${esc(m.categoria)} · ${Math.round((m.probabilidad||0)*100)}% de confianza
+           · redactado por ${m.fuente === "deepseek" ? "DeepSeek" : "el propio modelo"}</div>`
+        : "";
+      // Solo se interpretan los **negritas** que pone la explicacion; el
+      // resto del texto va escapado.
+      const cuerpo = esc(m.contenido).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+      return `<div class="burbuja suya">${cuerpo}
+        ${pesos ? `<div class="pesos">${pesos}</div>` : ""}${meta}</div>`;
+    }).join("");
+    hilo.scrollTop = hilo.scrollHeight;
+  }
+
+  function chatEjemplo(texto){
+    document.getElementById('chatTexto').value = texto;
+    enviarChat();
+  }
+
+  async function enviarChat(){
+    const caja = document.getElementById('chatTexto');
+    const btn = document.getElementById('chatBtn');
+    const texto = caja.value.trim();
+    if(texto.length < 15) return;
+
+    CHAT.push({rol:"user", contenido:texto});
+    caja.value = "";
+    btn.disabled = true;
+    pintarChat();
+    document.getElementById('chatHilo').insertAdjacentHTML('beforeend',
+      '<div class="burbuja suya" id="chatPensando"><div class="spinner" style="margin:4px auto"></div></div>');
+
+    try{
+      const r = await fetch(API + "/chat", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          texto,
+          // Se manda solo lo ya conversado, sin la evidencia, que es lo
+          // unico que el backend espera del historial.
+          historial: CHAT.filter(m=>m.contenido).slice(0,-1).slice(-6)
+                         .map(m=>({rol:m.rol, contenido:m.contenido})),
+        }),
+      });
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.detail || "no se pudo responder");
+      CHAT.push({rol:"assistant", contenido:j.respuesta, categoria:j.categoria,
+                 probabilidad:j.probabilidad, terminos:j.terminos_decisivos, fuente:j.fuente});
+    }catch(e){
+      CHAT.push({rol:"assistant", contenido:`No se pudo consultar la API: ${e.message}`});
+    }finally{
+      btn.disabled = false;
+      pintarChat();
+    }
+  }
+
+  /* ---------- explorar el historico por termino ----------
+     Los terminos no estan escritos a mano: los devuelve /sugerencias, que
+     los saco del corpus junto con en cuantos documentos aparece cada uno.
+     Al hacer clic se consulta /buscar, que trae los documentos donde ese
+     termino mas pesa. No es busqueda por parecido: si el documento no lo
+     menciona, no aparece. */
+  function pintarSugerencias(terminos){
+    if(!terminos || !terminos.length) return;
+    document.getElementById('sugChips').innerHTML = terminos.map(t=>
+      `<span class="ej" onclick="explorar('${esc(t.termino).replace(/'/g,"\\'")}')"
+             title="${t.documentos} documentos en ${esc(t.categoria)}">${esc(t.termino)}</span>`
+    ).join("");
+    document.getElementById('sugerencias').hidden = false;
+  }
+
+  async function explorar(termino){
+    const out = document.getElementById('resultado');
+    out.innerHTML = '<div class="spinner"></div>';
+    try{
+      const r = await fetch(`${API}/buscar?termino=${encodeURIComponent(termino)}&cantidad=5`);
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.detail || "error");
+      const filas = (j.resultados||[]).map(d=>`
+        <div class="rel">
+          <div class="rel-h">
+            <div class="rt">${esc(d.titulo)}</div>
+            <span class="sim" title="peso del término en el documento">${(d.relevancia ?? 0).toFixed(2)}</span>
+          </div>
+          ${d.extracto ? `<div class="rx">${esc(d.extracto)}</div>` : ""}
+          <div class="rc"><span class="rdot" style="background:${(COLORES[d.categoria]||["#6d5efc"])[0]}"></span>${esc(d.categoria)}</div>
+        </div>`).join("");
+      out.innerHTML = `
+        <div class="sec-lbl">🔎 Histórico · “${esc(termino)}”</div>
+        ${filas || '<div style="color:#5c6885;font-size:12.5px">Ese término no está en el vocabulario del modelo.</div>'}
+        <div class="rel-nota">${j.total||0} coincidencias entre ${(TOTAL_DOCS||0).toLocaleString('es')} documentos</div>`;
+    }catch(e){
+      out.innerHTML = `<div class="err">No se pudo consultar el histórico
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(e.message)}</div></div>`;
+    }
+  }
+
+
+  let MODELO_PROPIO = null;
+
+  /* La muestra de ejemplo sale del corpus del proyecto, no de textos
+     inventados. Son 592 documentos reales etiquetados por su columna
+     `fuente`: StackOverflow son preguntas, Medium son articulos.
+
+     Se eligio esa distincion porque es ortogonal a las 8 categorias de
+     fabrica: las dos fuentes cubren las 8 por igual, asi que ninguna
+     reagrupacion de las etiquetas existentes puede producirla. Fusionar
+     categorias --Backend y Frontend en "Desarrollo"-- no probaria nada,
+     porque eso se resuelve con una tabla de equivalencias y sin modelo.
+
+     Ver dataset/preparar_muestra.py para como se armo. */
+  async function entrenarEjemplo(){
+    const caja = document.getElementById('entrenamiento');
+    caja.innerHTML = '<div class="spinner"></div>';
+    try{
+      const r = await fetch("dataset/muestra_tipo_contenido.csv");
+      if(!r.ok) throw new Error("no se encontró la muestra del corpus");
+      const csv = await r.blob();
+      await enviarAEntrenar(csv, "muestra_tipo_contenido.csv", "Tipo de contenido");
+    }catch(e){
+      caja.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+    }
+  }
+
+  function entrenarPropio(ev){
+    const f = ev.target.files[0];
+    if(f) enviarAEntrenar(f, f.name, f.name.replace(/\.csv$/i,""));
+    ev.target.value = "";
+  }
+
+  async function enviarAEntrenar(blob, nombreArchivo, nombre){
+    const caja = document.getElementById('entrenamiento');
+    const btn = document.getElementById('btnEjemplo');
+    btn.disabled = true;
+    caja.innerHTML = '<div class="spinner"></div>';
+    try{
+      const fd = new FormData();
+      fd.append("archivo", blob, nombreArchivo);
+      fd.append("nombre", nombre);
+      const r = await fetch(API + "/modelos", {method:"POST", body:fd});
+      const j = await r.json();
+      if(!r.ok) throw new Error(typeof j.detail==="string" ? j.detail : "no se pudo entrenar");
+
+      MODELO_PROPIO = j;
+      const dist = Object.entries(j.distribucion||{})
+        .map(([c,n])=>`<div class="dist-row"><span class="dn">${esc(c)}</span>
+          <span class="dv">${n}</span></div>`).join("");
+      caja.innerHTML = `
+        <div class="saved">✅ Modelo entrenado · ${esc(j.nombre)}</div>
+        <div class="stats" style="margin-top:12px">
+          <div class="stat"><div class="k">Categorías</div><div class="v grad">${(j.categorias||[]).length}</div></div>
+          <div class="stat"><div class="k">Ejemplos</div><div class="v">${j.ejemplos}</div></div>
+          <div class="stat"><div class="k">F1 macro</div><div class="v">${j.f1_macro}</div></div>
+        </div>
+        <div style="margin-top:12px">${dist}</div>
+        <div class="rel-nota" style="text-align:left">F1 medido sobre el 20% apartado antes de entrenar, no sobre los mismos textos con los que aprendió.</div>`;
+
+      document.getElementById('compararVacio').hidden = true;
+      document.getElementById('compararCaja').hidden = false;
+      // Un documento real del corpus, de los que quedaron fuera de la muestra.
+      document.getElementById('textoPropio').value =
+        "I want to protect a RSA private key stored in localStorage by wrapping " +
+        "it with a key derived from the user's password. However when unwrapping " +
+        "the key the error is thrown. This is a minimal snippet for reproducing it.";
+    }catch(e){
+      caja.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+    }finally{
+      btn.disabled = false;
+    }
+  }
+
+  async function compararModelos(){
+    if(!MODELO_PROPIO) return;
+    const texto = document.getElementById('textoPropio').value.trim();
+    const caja = document.getElementById('comparacion');
+    const btn = document.getElementById('btnComparar');
+    if(texto.length < 20){ caja.innerHTML='<div class="err">El texto debe tener al menos 20 caracteres.</div>'; return; }
+    btn.disabled = true;
+    caja.innerHTML = '<div class="spinner"></div>';
+    try{
+      // A los dos modelos el mismo texto, en paralelo.
+      const [fab, pro] = await Promise.all([
+        fetch(API+"/contenido",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({titulo:"Consulta", texto})}).then(r=>r.json()),
+        fetch(`${API}/modelos/${MODELO_PROPIO.id}/clasificar`,{method:"POST",
+          headers:{"Content-Type":"application/json"}, body:JSON.stringify({texto})}).then(r=>r.json())
+      ]);
+      const fila = (etq, cat, p, tono) => `
+        <div class="rel" style="border-color:${tono}44">
+          <div class="rel-h">
+            <div><div class="rc" style="margin:0 0 4px">${etq}</div>
+              <div class="rt" style="color:${tono}">${esc(cat)}</div></div>
+            <span class="sim" style="color:${tono};background:${tono}18;border-color:${tono}44">${Math.round(p*100)}%</span>
+          </div>
+        </div>`;
+      caja.innerHTML =
+        fila("Modelo de fábrica · 8 categorías técnicas", fab.categoria, fab.probabilidad, "#f59e0b") +
+        fila(`Tu modelo · ${(MODELO_PROPIO.categorias||[]).join(" / ")}`, pro.categoria, pro.probabilidad, "#23d5c8") +
+        `<div class="rel-nota" style="text-align:left">Los dos aciertan, pero responden preguntas distintas: uno dice de qué habla, el otro qué es. Ninguna de las 8 etiquetas de fábrica puede dar la segunda respuesta.</div>`;
+    }catch(e){
+      caja.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+    }finally{
+      btn.disabled = false;
+    }
   }
 
   function relacionados(data){
@@ -585,17 +1057,25 @@
       const j=await res.json();
       if(!res.ok) throw new Error(j.detail||"error");
       data={ titulo, texto, categoria:j.categoria, probabilidad:j.probabilidad,
-             palabras: (j.informacion_adicional&&j.informacion_adicional.length)?j.informacion_adicional:local.palabras };
+             palabras: (j.informacion_adicional&&j.informacion_adicional.length)?j.informacion_adicional:local.palabras,
+             // Los relacionados salen del historico completo: 38.257 documentos
+             // comparados por similitud del coseno en el servidor. Antes se
+             // calculaban aca contando palabras compartidas contra lo que el
+             // propio navegador tuviera guardado, que en una visita nueva es
+             // nada.
+             relacionados: j.contenidos_relacionados || [],
+             ranking: rankingDelModelo(j) };
       via="api";
     }catch(e){
       // Respaldo local: la demo nunca se rompe aunque el backend no responda.
       const top=local.ranking[0];
-      data={ titulo, texto, categoria:top.cat, probabilidad:top.p, palabras:local.palabras };
+      data={ titulo, texto, categoria:top.cat, probabilidad:top.p, palabras:local.palabras,
+             relacionados:null, ranking:local.ranking };
       via="local";
     }
     const item={ id:"u"+Date.now(), ...data, fecha:Date.now() };
     agregar(item);
-    pintarResultado(data, via, local.ranking);
+    pintarResultado(data, via, data.ranking || local.ranking);
     btn.disabled=false; btn.textContent="✨ Clasificar y archivar";
   }
 
@@ -711,11 +1191,52 @@
 
   /* ---------- init ---------- */
   actualizarContadores();
+
+  // El boton atras del navegador vuelve a la vista anterior en vez de sacar
+  // al visitante del sitio.
+  addEventListener('popstate', e => setView((e.state && e.state.vista) || location.hash.slice(1), true));
+  if(location.hash.slice(1)) setView(location.hash.slice(1), true);
+
+  // El script de Google se pide solo si hay un ID configurado. Sin eso no
+  // tiene sentido cargar 80 KB de un tercero para no mostrar nada.
+  pintarCuenta();
+  if(GOOGLE_CLIENT_ID && !CUENTA){
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.onload = pintarCuenta;
+    document.head.appendChild(s);
+  }
+
+  // Vista previa, para que el panel no arranque vacio mientras llega lo real.
   pintarResultado(
-    {titulo:"Introducción a Spring Boot", categoria:"Backend", probabilidad:0.89, palabras:["Java","Spring Boot","API REST","controlador"]},
+    {titulo:"Introducción a Spring Boot", categoria:"Backend", probabilidad:0.89,
+     palabras:["Java","Spring Boot","API REST","controlador"], vistaPrevia:true},
     "api",
     scoreLocal("Introducción a Spring Boot creación de APIs REST con Java y Spring Boot controladores servicios").ranking
   );
+
+  /* Se pide todo esto al abrir la pagina, no al primer clic.
+     Dos motivos. Uno: de aca sale el total de documentos del historico, que
+     la tarjeta de relacionados necesita para decir contra cuantos comparo.
+     Dos, y mas importante: en el plan gratuito el servicio se duerme a los
+     15 minutos, y el primero que lo despierta espera hasta 70 segundos. Si
+     ese costo lo paga la carga de la pagina, para cuando alguien escriba
+     algo y presione Clasificar el servidor ya esta despierto. */
+  (async function precalentar(){
+    try{
+      const r = await fetch(API + "/metricas");
+      if(!r.ok) return;
+      METRICAS = await r.json();
+      TOTAL_DOCS = METRICAS?.corpus?.documentos_indexados || 0;
+
+      const s = await fetch(API + "/sugerencias");
+      if(s.ok) pintarSugerencias((await s.json()).terminos);
+    }catch(e){
+      // Sin conexion la pagina sigue andando: clasifica con el respaldo local
+      // y los relacionados salen de la biblioteca del navegador.
+    }
+  })();
 </script>
 
 <footer class="creditos">
