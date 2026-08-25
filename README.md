@@ -13,6 +13,23 @@ catalogarlo a mano.
 
 ---
 
+## Probalo
+
+| | |
+|---|---|
+| **La aplicación** | https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/ |
+| **La API — documentación interactiva** | https://techmind-api-24gg.onrender.com/docs |
+
+En Swagger podés clasificar cualquier texto sin instalar nada: abrí
+`POST /contenido`, tocá *Try it out* y pegá tu contenido.
+
+> La API corre en el plan gratuito de Render, que apaga el servicio cuando
+> nadie lo usa. Un ping cada diez minutos lo mantiene despierto, pero si
+> justo lo encontrás dormido, la primera consulta tarda alrededor de un
+> minuto en levantarlo.
+
+---
+
 ## Levantarla
 
 ```bash
@@ -32,9 +49,11 @@ Arranca sin base de datos y sin clave de DeepSeek.
 
 ### La interfaz
 
-`frontend/index.html` se abre directo en el navegador, sin instalar nada.
-Apunta a la API desplegada; para usar la local hay que cambiar la URL que
-está al final del archivo.
+`index.html` se abre directo en el navegador, sin instalar nada.
+
+Elige a qué API hablarle según dónde esté corriendo: publicada usa la de
+Render, y abierta desde el disco o desde `localhost` usa `127.0.0.1:8000`.
+No hay que cambiar nada para desarrollar.
 
 ---
 
@@ -66,7 +85,7 @@ backend/       La API (FastAPI)
 nlp/           Módulo de inferencia: clasificador, limpieza, palabras clave
 notebooks/     Limpieza y EDA · entrenamiento · sugerencias y relacionados
 modelos/       Los artefactos entrenados
-frontend/      La interfaz
+index.html     La interfaz
 dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 ```
 
@@ -219,17 +238,14 @@ vocabulario.
 
 ## En producción
 
-Los artefactos se descargan de **OCI Object Storage** al arrancar, si no
-están en disco:
+La API está en **Render** y la página en **GitHub Pages**, las dos en sus
+planes gratuitos. El paso a paso está en [`DESPLIEGUE.md`](DESPLIEGUE.md).
 
-```
-MODELO_URL=...
-MATRIZ_HISTORICA_URL=...
-SUGERENCIAS_BOTONES_URL=...
-```
-
-Así se puede reemplazar el modelo sin reconstruir la imagen: se cambia el
-objeto en el bucket y se reinicia el servicio.
+Los artefactos se copian durante la construcción, desde `modelos/`. Las
+variables `MODELO_URL`, `MATRIZ_HISTORICA_URL` y `SUGERENCIAS_BOTONES_URL`
+quedan como respaldo: si el archivo no estuviera en disco, la API lo
+descarga sola al arrancar. Eso permite reemplazar el modelo sin reconstruir
+nada.
 
 ---
 

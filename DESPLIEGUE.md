@@ -5,7 +5,7 @@ Dos servicios, los dos gratuitos y sin tarjeta:
 | | Dónde | Queda en |
 |---|---|---|
 | La API | Render | `https://techmind-api-24gg.onrender.com` |
-| La página | GitHub Pages | `https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/frontend/` |
+| La página | GitHub Pages | `https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/` |
 
 ---
 
@@ -20,7 +20,7 @@ el servicio solo: no hay que tocar nada del panel.
 > ya estaba tomado por otro proyecto. Render le agregó un sufijo y el
 > servicio quedó en **`techmind-api-24gg.onrender.com`**.
 >
-> Esa es la URL que usa `frontend/index.html`. Si algún día se renombra el
+> Esa es la URL que usa `index.html`. Si algún día se renombra el
 > servicio, hay que cambiarla ahí también.
 
 La primera construcción tarda unos minutos. Cuando termine, comprobar:
@@ -77,7 +77,7 @@ Branch    main    /  (root)
 Guardar. En un par de minutos queda en:
 
 ```
-https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/frontend/
+https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/
 ```
 
 La página elige sola a qué API hablarle: desde GitHub Pages usa la de
