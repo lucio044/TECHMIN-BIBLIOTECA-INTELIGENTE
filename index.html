@@ -4,45 +4,95 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TechMind — Biblioteca Inteligente de Conocimiento Técnico</title>
+
+<!-- IBM Plex: una familia hecha para interfaces tecnicas, con su monoespaciada
+     hermana para las cifras. Si la descarga falla la pagina queda igual de
+     legible con la pila del sistema, que es el respaldo declarado abajo. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
   :root{
     --bg0:#0a0e1a; --bg1:#0f1524; --card:rgba(255,255,255,.04); --cardline:rgba(255,255,255,.09);
     --txt:#eef2fb; --txt2:#aeb9d0; --muted:#6f7c99;
     --grad1:#6d5efc; --grad2:#23d5c8; --glow:rgba(109,94,252,.5);
+
+    --sans:"IBM Plex Sans","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    /* La monoespaciada se reserva para lo que se lee como instrumento:
+       cifras, similitudes, aportes y terminos del modelo. */
+    --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
+
+  /* Todo lo que es una cifra va en monoespaciada y con cifras de ancho fijo.
+     Es lo que hace que una columna de similitudes se lea como columna y no
+     como texto suelto, y le da a la pagina aire de instrumento.
+     El grosor se fija en 600 porque de Plex Mono solo se cargan 400 y 600:
+     pedir 800 haria que el navegador lo engorde por su cuenta. */
+  .ring .val b, .rank-row .pc, .rel .sim, .peso, .stat .v, .dist-row .dv,
+  .tab .n, .fchip .fn{
+    font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:600;
+  }
+  .peso, .rel .sim{ letter-spacing:-.3px; }
+
+  /* Al cambiar de pestaña el contenido entra en vez de aparecer de golpe.
+     Es la diferencia entre sentir que la pagina navega y sentir que
+     parpadea, que es casi todo lo que aporta una aplicacion compilada. */
+  section[id^="v-"]:not([hidden]){ animation:entrar .26s cubic-bezier(.22,.8,.3,1) both; }
+  @keyframes entrar{ from{ opacity:0; transform:translateY(7px); } to{ opacity:1; transform:none; } }
+
+  @media(prefers-reduced-motion:reduce){
+    *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
   body{
-    font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif; color:var(--txt);
+    font-family:var(--sans); color:var(--txt);
     background:
       radial-gradient(900px 500px at 12% -8%, rgba(109,94,252,.22), transparent 60%),
       radial-gradient(800px 500px at 100% 0%, rgba(35,213,200,.16), transparent 55%),
       linear-gradient(180deg,#0a0e1a,#0b1020 60%,#0a0e1a);
     min-height:100vh; -webkit-font-smoothing:antialiased;
   }
-  .topbar{ display:flex; align-items:center; gap:20px; padding:16px 5vw; flex-wrap:wrap;
+  .topbar{ display:flex; align-items:center; gap:20px; padding:16px 5vw;
            border-bottom:1px solid rgba(255,255,255,.06); backdrop-filter:blur(8px); position:sticky; top:0; z-index:20;
            background:rgba(10,14,26,.72); }
-  .logo{ font-weight:800; font-size:21px; letter-spacing:-.5px; }
+
+  /* Con seis pestañas la barra necesita ~1.400 px y una laptop comun tiene
+     1.366. Primero se retiran los adornos, que no hacen falta para navegar.
+     Y las pestañas se deslizan siempre que no entren, sin punto de quiebre:
+     asi el arreglo no depende de que el ancho calculado a mano sea exacto,
+     que con emojis y tipografias variables nunca lo es. */
+  @media(max-width:1420px){ .tag{ display:none; } }
+  @media(max-width:1240px){ .badge-top{ display:none; } }
+  @media(max-width:1100px){ .topbar{ gap:12px; padding:12px 4vw; } }
+  .logo{ font-weight:700; font-size:21px; letter-spacing:-.5px; }
   .logo b{ background:linear-gradient(90deg,var(--grad1),var(--grad2)); -webkit-background-clip:text;
            background-clip:text; color:transparent; }
   .badge-top{ font-size:11px; font-weight:600; color:#cdd6ec; border:1px solid rgba(255,255,255,.14);
               border-radius:20px; padding:5px 13px; background:rgba(255,255,255,.05); white-space:nowrap; }
   .badge-top .g{ width:7px; height:7px; border-radius:50%; background:var(--grad2); display:inline-block;
                  margin-right:6px; box-shadow:0 0 8px var(--grad2); }
-  .tag{ margin-left:auto; font-size:12px; color:var(--muted); white-space:nowrap; }
+  /* El empujon a la derecha lo da #cuenta, que es lo que siempre esta.
+     Si lo diera .tag, ocultarla en pantallas angostas descolocaria todo. */
+  #cuenta{ margin-left:auto; }
+  .tag{ font-size:12px; color:var(--muted); white-space:nowrap; }
 
   /* nav tabs */
   .tabs{ display:flex; gap:6px; background:rgba(255,255,255,.04); border:1px solid var(--cardline);
-         border-radius:14px; padding:5px; }
+         border-radius:14px; padding:5px; min-width:0;
+         overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  /* flex:none y nowrap son lo que hace util al deslizamiento: sin ellos las
+     pestañas se encogen y parten el texto en dos lineas en vez de salirse. */
   .tab{ border:none; background:transparent; color:var(--txt2); font-family:inherit; font-size:13.5px; font-weight:600;
-        padding:8px 16px; border-radius:10px; cursor:pointer; transition:.15s; display:flex; align-items:center; gap:7px; }
+        padding:8px 16px; border-radius:10px; cursor:pointer; transition:.15s; display:flex; align-items:center; gap:7px;
+        flex:none; white-space:nowrap; }
   .tab:hover{ color:#fff; }
   .tab.active{ color:#fff; background:linear-gradient(135deg,var(--grad1),var(--grad2)); box-shadow:0 8px 22px var(--glow); }
   .tab .n{ font-size:11px; background:rgba(0,0,0,.25); padding:1px 7px; border-radius:10px; }
 
   .wrap{ max-width:1120px; margin:0 auto; padding:26px 5vw 70px; }
   .hero{ text-align:center; margin-bottom:24px; }
-  .hero h1{ font-size:26px; font-weight:800; letter-spacing:-.6px; line-height:1.15; }
+  .hero h1{ font-size:26px; font-weight:700; letter-spacing:-.6px; line-height:1.15; }
   .hero h1 .gr{ background:linear-gradient(90deg,var(--grad1),var(--grad2)); -webkit-background-clip:text;
                 background-clip:text; color:transparent; }
   .hero .sub{ color:var(--muted); font-size:13.5px; margin-top:7px; }
@@ -83,11 +133,11 @@
   .ring{ position:relative; width:100px; height:100px; flex:none; }
   .ring svg{ transform:rotate(-90deg); }
   .ring .val{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .ring .val b{ font-size:24px; font-weight:800; }
+  .ring .val b{ font-size:24px; font-weight:600; }
   .ring .val span{ font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
 
   .cat-mini{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
-  .cat-badge{ display:inline-flex; align-items:center; gap:9px; font-weight:800; font-size:17px; padding:10px 17px;
+  .cat-badge{ display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:17px; padding:10px 17px;
               border-radius:13px; color:#fff; }
   .cat-badge .dot{ width:9px; height:9px; border-radius:50%; background:#fff; opacity:.9; box-shadow:0 0 10px rgba(255,255,255,.6); }
 
@@ -120,7 +170,7 @@
   .rel .rx{ font-size:12px; line-height:1.5; color:#95a3bf; margin-top:6px;
             display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
             line-clamp:2; overflow:hidden; }
-  .rel .sim{ flex:none; font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
+  .rel .sim{ flex:none; font-size:11px; font-weight:600; font-variant-numeric:tabular-nums;
              color:#5fe6d6; background:rgba(35,213,200,.12); border:1px solid rgba(35,213,200,.28);
              border-radius:8px; padding:2px 7px; }
   .rel .rdot{ width:7px; height:7px; border-radius:50%; display:inline-block; }
@@ -143,7 +193,7 @@
   .pesos{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
   .peso{ font-size:11px; font-variant-numeric:tabular-nums; padding:3px 8px; border-radius:8px;
          background:rgba(35,213,200,.1); border:1px solid rgba(35,213,200,.25); color:#5fe6d6; }
-  .peso b{ color:#8ff0e4; font-weight:700; }
+  .peso b{ color:#8ff0e4; font-weight:600; }
   .chat-meta{ font-size:11px; color:#5c6885; margin-top:8px; }
   .chat-vacio{ color:#5c6885; font-size:13px; text-align:center; padding:26px 10px; line-height:1.6; }
 
@@ -206,7 +256,7 @@
   .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
   .stat{ border:1px solid var(--cardline); border-radius:18px; padding:20px 22px; background:var(--card); backdrop-filter:blur(10px); }
   .stat .k{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
-  .stat .v{ font-size:34px; font-weight:800; margin-top:6px; letter-spacing:-1px; }
+  .stat .v{ font-size:34px; font-weight:600; margin-top:6px; letter-spacing:-1.4px; }
   .stat .v.grad{ background:linear-gradient(90deg,var(--grad1),var(--grad2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .panel-cols{ display:grid; grid-template-columns:1.4fr 1fr; gap:20px; }
   @media(max-width:900px){ .panel-cols{ grid-template-columns:1fr; } }
