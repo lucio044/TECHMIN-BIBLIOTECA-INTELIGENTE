@@ -1,13 +1,37 @@
+"""El asistente que explica una clasificacion.
+
+Funciona en dos modos, y la diferencia es solo de redaccion:
+
+  MODELO    Sin clave de proveedor. La respuesta se arma con lo que el
+            propio sistema calculo: la categoria, los terminos que mas
+            empujaron la decision, las candidatas que quedaron atras y los
+            documentos parecidos del historico. Nunca falla, no cuesta
+            nada y no puede afirmar nada que el sistema no sepa.
+
+  DEEPSEEK  Con clave configurada. Se le pasa esa misma evidencia ya
+            calculada y redacta en prosa. Si la llamada falla, se vuelve
+            al modo anterior en vez de disculparse.
+
+El orden importa: la evidencia se calcula siempre primero. El proveedor
+externo redacta sobre hechos, no los inventa a partir de una etiqueta.
+"""
+
 import logging
 
 from openai import OpenAI
+
 from app.core.config import settings
 from app.schemas.contenido import ContenidoEntrada
+from app.services import explicacion
 from app.services.clasificador import clasificar_contenido
 
 logger = logging.getLogger(__name__)
 
 _cliente = None
+
+
+def hay_proveedor() -> bool:
+    return bool(settings.deepseek_api_key)
 
 
 def _obtener_cliente() -> OpenAI:
@@ -20,55 +44,52 @@ def _obtener_cliente() -> OpenAI:
     return _cliente
 
 
-def construir_prompt(texto_usuario: str, categoria: str, probabilidad: float, palabras_clave: list[str]) -> str:
-    contexto = (
-        f"El siguiente contenido técnico fue clasificado por nuestro modelo como '{categoria}' "
-        f"con una confianza de {probabilidad:.0%}. "
-        f"Las palabras clave detectadas son: {', '.join(palabras_clave)}.\n\n"
+def construir_prompt(texto_usuario: str, resultado, terminos: list[dict]) -> str:
+    """Le da al modelo de lenguaje los hechos, no la tarea de adivinarlos."""
+    evidencia = ", ".join(f"{t['termino']} ({t['aporte']:+.2f})" for t in terminos) or "ninguno destacado"
+    relacionados = getattr(resultado, "contenidos_relacionados", None) or []
+    vecinos = "; ".join(f"{r.titulo} (similitud {r.similitud:.2f})" for r in relacionados[:3]) or "ninguno"
+
+    return (
         f"Contenido del usuario: \"{texto_usuario}\"\n\n"
-        f"Como asistente de TechMind AI, explica este contenido de forma clara y natural, "
-        f"usando la categoría y palabras clave como contexto, sin mencionar explícitamente "
-        f"que provienen de un modelo de clasificación. Varía la forma de comenzar tu respuesta "
-        f"en cada mensaje, evitando repetir siempre la misma expresión de apertura (como "
-        f"'¡Claro!' o '¡Excelente pregunta!'); a veces puedes ir directo al grano, otras veces "
-        f"usar una frase distinta, según lo que sienta más natural para el contexto."
+        f"Nuestro clasificador lo ubico en '{resultado.categoria}' con {resultado.probabilidad:.0%} "
+        f"de confianza.\n"
+        f"Terminos que mas empujaron esa decision, con su aporte: {evidencia}.\n"
+        f"Documentos parecidos en el historico: {vecinos}.\n\n"
+        f"Explica el contenido de forma clara y natural en español, apoyandote en esos datos. "
+        f"No inventes hechos que no esten arriba y no menciones que provienen de un modelo. "
+        f"Varia la forma de abrir la respuesta en lugar de empezar siempre igual."
     )
-    return contexto
 
 
-def generar_respuesta(mensajes: list[dict], resultado_clasificacion=None) -> str:
+def responder_chat(texto_usuario: str, historial: list) -> dict:
+    entrada = ContenidoEntrada(titulo="Consulta de chat", texto=texto_usuario)
+    resultado = clasificar_contenido(entrada)
+
+    # La evidencia se calcula siempre: es la respuesta en un modo y el
+    # insumo del prompt en el otro.
+    _, _, terminos = explicacion.terminos_decisivos(texto_usuario)
+
+    base = {
+        "categoria": resultado.categoria,
+        "probabilidad": resultado.probabilidad,
+        "terminos_decisivos": terminos,
+    }
+
+    if not hay_proveedor():
+        return {**base, "respuesta": explicacion.redactar(texto_usuario, resultado), "fuente": "modelo"}
+
+    mensajes = [{"role": m.rol, "content": m.contenido} for m in historial]
+    mensajes.append({"role": "user", "content": construir_prompt(texto_usuario, resultado, terminos)})
+
     try:
         respuesta = _obtener_cliente().chat.completions.create(
             model="deepseek-chat",
             messages=mensajes,
         )
-        return respuesta.choices[0].message.content
+        return {**base, "respuesta": respuesta.choices[0].message.content, "fuente": "deepseek"}
     except Exception as e:
-        logger.error(f"Fallo al consultar DeepSeek: {e}")
-        if resultado_clasificacion is None:
-            return "No pude generar una explicación en este momento, pero aquí está la clasificación."
-        categoria = resultado_clasificacion.categoria
-        confianza = resultado_clasificacion.probabilidad
-        palabras = ", ".join(resultado_clasificacion.informacion_adicional)
-        return (
-            f"No pude conectar con el asistente en este momento, pero según nuestro modelo "
-            f"esto se clasifica como '{categoria}' con {confianza:.0%} de confianza. "
-            f"Palabras clave detectadas: {palabras}."
-        )
-
-
-def responder_chat(texto_usuario: str, historial: list) -> str:
-    entrada = ContenidoEntrada(titulo="Consulta de chat", texto=texto_usuario)
-    resultado = clasificar_contenido(entrada)
-
-    prompt = construir_prompt(
-        texto_usuario=texto_usuario,
-        categoria=resultado.categoria,
-        probabilidad=resultado.probabilidad,
-        palabras_clave=resultado.informacion_adicional,
-    )
-
-    mensajes = [{"role": m.rol, "content": m.contenido} for m in historial]
-    mensajes.append({"role": "user", "content": prompt})
-
-    return generar_respuesta(mensajes, resultado_clasificacion=resultado)
+        # Se degrada al modo modelo, que responde igual de bien. El usuario
+        # no tiene por que enterarse de que un proveedor externo fallo.
+        logger.warning("DeepSeek no respondio, se explica con el modelo: %s", e)
+        return {**base, "respuesta": explicacion.redactar(texto_usuario, resultado), "fuente": "modelo"}
