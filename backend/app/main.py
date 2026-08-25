@@ -17,8 +17,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://127.0.0.1:5500",          # Live Server de VS Code
+        "https://lucio044.github.io",     # la pagina en GitHub Pages
     ],
-    allow_origin_regex=r"https://techmind-frontend.*\.vercel\.app",
+    allow_origin_regex=r"https://(techmind-frontend.*\.vercel\.app|.*\.onrender\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

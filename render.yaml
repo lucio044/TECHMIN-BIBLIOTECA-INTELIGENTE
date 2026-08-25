@@ -1,0 +1,34 @@
+# Despliegue de la API en Render.
+#
+# Render lee este archivo y arma el servicio solo: no hay que configurar
+# nada a mano en el panel. Ver DESPLIEGUE.md para el paso a paso.
+
+services:
+  - type: web
+    name: techmind-api
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: backend
+
+    buildCommand: pip install -r requirements.txt
+
+    # $PORT lo asigna Render; no se puede fijar un puerto propio.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    # El disco del plan gratuito es efimero: lo que se descarga se pierde
+    # al reiniciar. Por eso los artefactos se bajan del repositorio en cada
+    # arranque, que son 33 MB y unos segundos.
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: MODELO_URL
+        value: https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE/raw/main/modelos/modelo_techmind_v2.joblib
+      - key: MATRIZ_HISTORICA_URL
+        value: https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE/raw/main/modelos/matriz_historica.pkl
+      - key: SUGERENCIAS_BOTONES_URL
+        value: https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE/raw/main/modelos/sugerencias_botones.json
+
+    # Render consulta esta ruta para saber si el servicio esta sano, y es
+    # tambien la que conviene usar para el ping que lo mantiene despierto.
+    healthCheckPath: /health

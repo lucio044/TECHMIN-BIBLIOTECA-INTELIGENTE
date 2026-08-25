@@ -268,7 +268,11 @@
   </div>
 
 <script>
-  const API = "http://98.81.139.150:8000";
+  // La API vive en Render. Al abrir el archivo desde el disco o desde
+  // localhost se usa la copia local, para poder desarrollar sin internet.
+  const API = ["localhost", "127.0.0.1", ""].includes(location.hostname)
+    ? "http://127.0.0.1:8000"
+    : "https://techmind-api.onrender.com";
   const CATS = ["Backend","Frontend","Mobile","Ciencia de Datos","Bases de Datos","DevOps / Cloud","Seguridad","Programación General"];
   const COLORES = {
     "Backend":            ["#6d5efc","#8b7dff"],
