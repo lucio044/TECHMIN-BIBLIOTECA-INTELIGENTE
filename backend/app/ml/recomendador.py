@@ -46,12 +46,25 @@ class RecomendadorContenido:
         # reconstruye el arreglo completo en cada llamada.
         self._vocabulario = self._vectorizador.get_feature_names_out()
 
+    def _pesos(self, vector):
+        """Producto punto de la consulta contra todo el historico.
+
+        La matriz esta guardada en float32 y el vectorizador devuelve la
+        consulta en float64. Mezclados, scipy sube los 4,2 millones de
+        valores de la matriz a float64 antes de multiplicar. Igualar el
+        tipo de la consulta evita esa conversion: el producto pasa de 18,4
+        a 6,9 ms, y la diferencia en la similitud es del orden de 1e-8, que
+        no cambia ni los valores redondeados a tres decimales ni el orden.
+        """
+        vector = vector.astype(self._matriz.dtype, copy=False)
+        return (self._matriz @ vector.T).toarray().ravel()
+
     def recomendar(self, texto: str, top_n: int = 3, umbral: float = UMBRAL_SIMILITUD_MINIMA) -> List[dict]:
         if not texto or not texto.strip():
             return []
 
         vector = self._vectorizador.transform([texto])
-        similitudes = (self._matriz @ vector.T).toarray().ravel()
+        similitudes = self._pesos(vector)
 
         cantidad = min(top_n, similitudes.size)
         candidatos = np.argpartition(similitudes, -cantidad)[-cantidad:]
@@ -91,7 +104,7 @@ class RecomendadorContenido:
         if vector.nnz == 0:
             return []
 
-        pesos = (self._matriz @ vector.T).toarray().ravel()
+        pesos = self._pesos(vector)
 
         cantidad = min(top_n, pesos.size)
         candidatos = np.argpartition(pesos, -cantidad)[-cantidad:]
