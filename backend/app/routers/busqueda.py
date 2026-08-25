@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.schemas.busqueda import BusquedaSalida
 from app.services.busqueda import buscar_documentos
+from app.core.acceso import identificar
 
 router = APIRouter()
 
@@ -10,6 +11,7 @@ router = APIRouter()
 def buscar(
     termino: str = Query(..., min_length=2, max_length=60, description="Palabra o par de palabras a buscar"),
     cantidad: int = Query(10, ge=1, le=50),
+    _=Depends(identificar),
 ):
     """Busca en el historico los documentos donde ese termino pesa mas.
 

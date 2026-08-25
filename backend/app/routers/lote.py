@@ -1,13 +1,17 @@
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 
 from app.schemas.lote import LoteSalida
 from app.services.lote import clasificar_lote
+from app.core.acceso import identificar
 
 router = APIRouter()
 
 
 @router.post("/lote", response_model=LoteSalida)
-async def procesar_lote(archivo: UploadFile = File(..., description="CSV con columnas de titulo y texto")):
+async def procesar_lote(
+    archivo: UploadFile = File(..., description="CSV con columnas de titulo y texto"),
+    _=Depends(identificar),
+):
     """Clasifica de una vez todas las filas de un CSV.
 
     El archivo necesita una fila de cabeceras con una columna de titulo y

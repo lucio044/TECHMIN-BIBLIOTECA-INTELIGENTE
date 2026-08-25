@@ -202,6 +202,30 @@ index.html     La interfaz: clasificar, biblioteca, mis temas y dashboard
 dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 ```
 
+### Acceso
+
+Las rutas viven bajo **`/v1`**. Las mismas sin prefijo siguen funcionando
+por compatibilidad y responden con la cabecera `Deprecation`.
+
+Se puede usar **sin credenciales**, con un límite de **30 peticiones por
+minuto**. Con una clave en `X-API-Key` el límite sube a **600**:
+
+```bash
+curl -H "X-API-Key: tu-clave" https://techmind-api-24gg.onrender.com/v1/categorias
+```
+
+Las claves se definen en la variable `TECHMIND_API_KEYS`, separadas por
+coma. Sin esa variable no hay claves y el servicio queda abierto con el
+límite anónimo, que es lo que corresponde a una demo pública.
+
+Cada respuesta trae:
+
+| Cabecera | Para qué |
+|---|---|
+| `X-Request-ID` | rastrear una petición concreta en los registros |
+| `X-Modelo-Version` | saber qué modelo produjo ese resultado |
+| `X-RateLimit-Remaining` | cuántas peticiones quedan en el minuto |
+
 ### Los endpoints
 
 | Método | Endpoint | Qué hace |
@@ -209,6 +233,10 @@ dataset/       Enlace al corpus (no se versiona, pesa 87,8 MB)
 | `POST` | **`/contenido`** | Clasifica un contenido técnico |
 | `GET` | `/buscar` | Busca en el histórico por palabra clave |
 | `GET` | `/metricas` | Rendimiento del modelo y composición del corpus |
+| `POST` `GET` | `/correcciones` | Reportar una clasificación equivocada |
+| `GET` | `/correcciones/resumen` | Dónde se equivoca más el modelo |
+| `POST` `GET` | `/modelos` | Entrenar un modelo con categorías propias |
+| `POST` | `/modelos/{id}/clasificar` | Clasificar con un modelo propio |
 | `POST` | `/lote` | Clasifica un CSV entero de una vez |
 | `GET` | `/sugerencias` | Términos de ejemplo para los botones |
 | `GET` | `/categorias` | Las 8 categorías |
@@ -242,6 +270,67 @@ confianza supera 0.5 — con textos ambiguos, la similitud puede devolver
 documentos sin relación real aunque el puntaje sea alto.
 
 ---
+
+## Categorías propias
+
+Las 8 categorías de fábrica sirven a quien organiza contenido técnico, y a
+nadie más: un estudio jurídico necesita *Laboral, Tributario, Societario*;
+una clínica necesita *Cardiología, Pediatría*.
+
+`POST /v1/modelos` recibe un CSV con las etiquetas del cliente y entrena un
+modelo suyo en segundos:
+
+```bash
+curl -X POST https://techmind-api-24gg.onrender.com/v1/modelos   -F "archivo=@mis_documentos.csv" -F "nombre=Estudio jurídico"
+```
+
+```json
+{
+  "id": "f9fc37777fb0",
+  "nombre": "Estudio jurídico",
+  "categorias": ["Laboral", "Penal", "Societario", "Tributario"],
+  "ejemplos": 120,
+  "f1_macro": 0.94
+}
+```
+
+El F1 se mide sobre el 20 % que se aparta antes de entrenar, no sobre los
+mismos textos con los que aprendió.
+
+La diferencia sobre un texto jurídico real:
+
+```
+"despido arbitrario del trabajador y cálculo de la indemnización"
+
+  modelo de fábrica  ->  Seguridad      18%
+  modelo propio      ->  Laboral        63%
+```
+
+> **Persistencia.** Los modelos viven en memoria y se pierden al reiniciar:
+> el plan gratuito no tiene disco persistente ni base de datos. En
+> producción se serializan a Object Storage con el identificador como
+> nombre, igual que el modelo principal.
+
+## Cuando el modelo se equivoca
+
+`POST /v1/correcciones` deja que quien usa la API avise de un error. Cada
+aviso queda como un ejemplo etiquetado a mano, que es justo el material que
+hace falta para reentrenar.
+
+`GET /v1/correcciones/resumen` agrupa las confusiones repetidas:
+
+```json
+{
+  "total": 3,
+  "confusiones": {
+    "Backend -> Bases de Datos": 2,
+    "Frontend -> Mobile": 1
+  }
+}
+```
+
+Si un mismo cruce se repite, esas dos categorías comparten frontera y
+conviene mirarlas juntas antes de reentrenar.
 
 ## El modelo
 
@@ -321,7 +410,7 @@ otros dos.
 
 ```bash
 cd nlp && pytest          # 72 pruebas
-cd backend && pytest      # 20 pruebas
+cd backend && pytest      # 40 pruebas
 ```
 
 Ninguna necesita el `.joblib` real: usan datos sintéticos y Pipelines
