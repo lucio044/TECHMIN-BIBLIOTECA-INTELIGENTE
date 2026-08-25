@@ -1,0 +1,11 @@
+# Vercel solo sirve la pagina. Todo lo demas vive en el repositorio pero no
+# hace falta subirlo: la API corre en Render y los artefactos pesan 33 MB.
+backend/
+nlp/
+notebooks/
+modelos/
+dataset/
+*.md
+!README.md
+preparar.py
+render.yaml

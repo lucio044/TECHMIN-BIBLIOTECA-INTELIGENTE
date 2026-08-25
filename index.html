@@ -176,6 +176,29 @@
   .dist-bar > i{ display:block; height:100%; border-radius:7px; transition:width 1s cubic-bezier(.2,.8,.2,1); }
   .dist-row .dv{ width:34px; text-align:right; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
   .kwcloud .chip{ cursor:default; }
+
+  /* pie con los creditos */
+  .creditos{
+    max-width:1180px; margin:56px auto 0; padding:28px 26px 8px;
+    border-top:1px solid var(--cardline); color:var(--muted); font-size:13px; line-height:1.75;
+  }
+  .creditos h4{
+    font-size:11px; text-transform:uppercase; letter-spacing:1.2px;
+    color:var(--txt2); margin:0 0 14px; font-weight:700;
+  }
+  .creditos .equipo{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr));
+    gap:9px 26px; margin-bottom:22px;
+  }
+  .creditos .p{ color:var(--txt2) }
+  .creditos .p b{ color:var(--txt); font-weight:600 }
+  .creditos .p.yo b{
+    background:linear-gradient(90deg,var(--grad1),var(--grad2));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .creditos a{ color:var(--txt2); text-decoration:none; border-bottom:1px solid var(--cardline) }
+  .creditos a:hover{ color:var(--txt) }
+  .creditos .cierre{ padding-top:16px; border-top:1px solid rgba(255,255,255,.05); margin-top:4px }
 </style>
 </head>
 <body>
@@ -694,5 +717,24 @@
     scoreLocal("Introducción a Spring Boot creación de APIs REST con Java y Spring Boot controladores servicios").ranking
   );
 </script>
+
+<footer class="creditos">
+  <h4>Equipo 46 · G9 LATAM</h4>
+  <div class="equipo">
+    <div class="p"><b>David Fletes Esparza</b><br>Cloud Infrastructure &amp; Frontend</div>
+    <div class="p"><b>Sebastián Lugo</b><br>Backend Lead</div>
+    <div class="p"><b>Daniel Soto</b><br>NLP Engineer</div>
+    <div class="p"><b>Edmer Rubio</b><br>Machine Learning Engineer</div>
+    <div class="p"><b>Edson Alberto Herrera Cervantes</b><br>Data Science</div>
+    <div class="p"><b>Willman Alca Alfaro</b><br>Data Science</div>
+    <div class="p yo"><b>Lucio Fernández Chávez</b><br>Data Science · coordinación</div>
+  </div>
+  <div class="cierre">
+    Proyecto desarrollado en equipo para el <b>Hackathon ONE — Alura Latam + Oracle</b>.
+    Esta página muestra el modelo de clasificación y su API.<br>
+    Código del equipo: <a href="https://github.com/No-Country-simulation/G9-LATAM-Team-46" target="_blank" rel="noopener">G9-LATAM-Team-46</a>
+    · Esta versión: <a href="https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE" target="_blank" rel="noopener">TECHMIN-BIBLIOTECA-INTELIGENTE</a>
+  </div>
+</footer>
 </body>
 </html>
