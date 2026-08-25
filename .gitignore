@@ -5,6 +5,9 @@ backend/app/ml/*.json
 
 # El dataset se descarga aparte (ver dataset/README.md)
 dataset/*.csv
+# ...salvo la muestra de ejemplo: la pagina la pide en runtime para la
+# pestaña de categorias propias, asi que tiene que estar publicada.
+!dataset/muestra_tipo_contenido.csv
 
 # Archivos que generan los notebooks al ejecutarse
 notebooks/*.csv

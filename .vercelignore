@@ -4,7 +4,10 @@ backend/
 nlp/
 notebooks/
 modelos/
-dataset/
+# Se excluye el contenido y no la carpeta: si se excluyera "dataset/" no
+# habria forma de volver a incluir un archivo de adentro.
+dataset/*
+!dataset/muestra_tipo_contenido.csv
 *.md
 !README.md
 preparar.py
