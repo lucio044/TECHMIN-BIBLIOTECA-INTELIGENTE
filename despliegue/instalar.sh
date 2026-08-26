@@ -84,6 +84,10 @@ python3 -m venv .venv
 .venv/bin/pip install --quiet --upgrade pip
 .venv/bin/pip install --quiet -r backend/requirements.txt
 
+# El procesamiento de texto vive en su propio paquete y la API lo
+# importa; antes era el mismo archivo copiado en los dos sitios.
+.venv/bin/pip install --quiet -e ./nlp
+
 # Copia los artefactos del repositorio al lugar donde el backend los busca,
 # para que no tenga que descargarlos al arrancar.
 .venv/bin/python preparar.py

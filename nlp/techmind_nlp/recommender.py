@@ -19,7 +19,7 @@ from typing import List
 import joblib
 import numpy as np
 
-from src.exceptions import ModeloNoDisponibleError, ModeloInvalidoError
+from techmind_nlp.exceptions import ModeloNoDisponibleError, ModeloInvalidoError
 
 # Por debajo de este valor no hay parecido real: es preferible no devolver nada
 # a devolver el resultado menos malo. Sale de observar que las consultas con

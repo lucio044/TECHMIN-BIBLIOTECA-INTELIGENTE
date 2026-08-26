@@ -1,6 +1,6 @@
 """Pruebas del módulo de tokenización y filtrado de stopwords."""
 
-from src.tokenization import eliminar_stopwords, tokenizar, tokenizar_y_filtrar
+from techmind_nlp.tokenization import eliminar_stopwords, tokenizar, tokenizar_y_filtrar
 
 
 def test_tokenizar_pasa_a_minusculas():

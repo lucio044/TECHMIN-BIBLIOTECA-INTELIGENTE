@@ -110,3 +110,22 @@ def test_no_se_usa_on_event():
     """`on_event` esta deprecado en FastAPI; el reemplazo es `lifespan`."""
     culpables = [n for n, t in _modulos().items() if "on_event" in t]
     assert not culpables, f"usan on_event: {culpables}"
+
+
+# --- una sola implementacion ---------------------------------------------
+
+def test_el_procesamiento_de_texto_no_esta_duplicado():
+    """El extractor de terminos vive en techmind-nlp, no aca.
+
+    Estaba el mismo archivo en `nlp/` y en `backend/app/ml/keywords.py`.
+    Se comprobo que daban resultados identicos, pero eso solo significa que
+    todavia no habian divergido: el primer arreglo en uno de los dos habria
+    dejado al otro atras sin que nada avisara.
+    """
+    assert not (APP / "ml" / "keywords.py").exists(), (
+        "reaparecio una copia de keywords en el backend; "
+        "el extractor se importa de techmind_nlp")
+
+    clasificador = io.open(APP / "services" / "clasificador.py", encoding="utf-8").read()
+    assert "from techmind_nlp.keywords import" in clasificador
+    assert "from app.ml.keywords" not in clasificador

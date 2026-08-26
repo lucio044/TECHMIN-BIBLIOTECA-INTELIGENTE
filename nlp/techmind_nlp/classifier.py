@@ -11,12 +11,12 @@ disco ni entrenar un modelo real en cada test.
 
 from typing import Callable, Optional
 
-from src.cleaning import preparar_entrada_modelo
-from src.config import TOP_N_PALABRAS_CLAVE, UMBRAL_CATEGORIA_ALTERNATIVA
-from src.exceptions import EntradaInvalidaError, TextoVacioError
-from src.keywords import ExtractorPalabrasClave, ExtractorPalabrasClaveTfidf
-from src.model_repository import RepositorioModelo
-from src.schemas import ResultadoClasificacion
+from techmind_nlp.cleaning import preparar_entrada_modelo
+from techmind_nlp.config import TOP_N_PALABRAS_CLAVE, UMBRAL_CATEGORIA_ALTERNATIVA
+from techmind_nlp.exceptions import EntradaInvalidaError, TextoVacioError
+from techmind_nlp.keywords import ExtractorPalabrasClave, ExtractorPalabrasClaveTfidf
+from techmind_nlp.model_repository import RepositorioModelo
+from techmind_nlp.schemas import ResultadoClasificacion
 
 
 class ClasificadorContenido:

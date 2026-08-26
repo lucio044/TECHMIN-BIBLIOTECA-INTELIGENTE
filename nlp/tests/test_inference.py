@@ -1,5 +1,5 @@
 """
-Pruebas de la fachada `src.inference` — el punto de entrada que realmente
+Pruebas de la fachada `techmind_nlp.inference` — el punto de entrada que realmente
 consume la API.
 
 Las pruebas de `test_classifier.py` verifican la lógica de clasificación
@@ -20,13 +20,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
-from src import inference
-from src.exceptions import (
+from techmind_nlp import inference
+from techmind_nlp.exceptions import (
     EntradaInvalidaError,
     ModeloNoDisponibleError,
     TextoVacioError,
 )
-from src.inference import precargar_modelo, procesar_contenido
+from techmind_nlp.inference import precargar_modelo, procesar_contenido
 
 
 def _crear_pipeline_entrenado() -> Pipeline:

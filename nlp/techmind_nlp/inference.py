@@ -15,9 +15,9 @@ de prueba — ver tests/test_classifier.py.
 from functools import lru_cache
 from typing import Any, Dict
 
-from src.classifier import ClasificadorContenido
-from src.config import MODELO_PATH
-from src.model_repository import RepositorioModelo
+from techmind_nlp.classifier import ClasificadorContenido
+from techmind_nlp.config import MODELO_PATH
+from techmind_nlp.model_repository import RepositorioModelo
 
 
 @lru_cache(maxsize=1)

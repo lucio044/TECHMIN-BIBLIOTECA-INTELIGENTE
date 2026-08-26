@@ -24,7 +24,7 @@ el filtrado de stopwords cumplirían.
 import re
 from typing import List, Optional, Set
 
-from src.keywords import es_termino_util
+from techmind_nlp.keywords import es_termino_util
 
 #: Mismo patrón que usa TfidfVectorizer por defecto: `(?u)\b\w\w+\b`.
 PATRON_TOKEN_SKLEARN = re.compile(r"(?u)\b\w\w+\b")

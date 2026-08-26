@@ -3,7 +3,7 @@
 import pytest
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from src.keywords import ExtractorPalabrasClaveTfidf
+from techmind_nlp.keywords import ExtractorPalabrasClaveTfidf
 
 
 @pytest.fixture

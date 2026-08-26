@@ -2,7 +2,10 @@ from fastapi import HTTPException, status
 from app.schemas.contenido import ContenidoEntrada, ContenidoSalida, CategoriaRanking, ContenidoRelacionado
 from app.ml.loader import cargar_modelo
 from app.ml.preprocesamiento import preparar_entrada_modelo
-from app.ml.keywords import ExtractorPalabrasClaveTfidf
+# El extractor vive en el paquete techmind-nlp y no aca: era el mismo
+# archivo copiado en dos sitios, con el riesgo de que un arreglo en uno
+# no llegara al otro. Se instala con `pip install -e ./nlp`.
+from techmind_nlp.keywords import ExtractorPalabrasClaveTfidf
 from app.ml.recomendador import cargar_recomendador
 
 modelo = cargar_modelo()

@@ -8,7 +8,7 @@ llega al vectorizador dejó de parecerse al que se usó para entrenarlo, y
 la exactitud cae sin que aparezca ningún error en tiempo de ejecución.
 """
 
-from src.cleaning import (
+from techmind_nlp.cleaning import (
     corregir_ortografia,
     limpiar_texto,
     preparar_entrada_modelo,

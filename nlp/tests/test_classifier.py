@@ -13,8 +13,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
-from src.classifier import ClasificadorContenido
-from src.exceptions import (
+from techmind_nlp.classifier import ClasificadorContenido
+from techmind_nlp.exceptions import (
     EntradaInvalidaError,
     ModeloNoDisponibleError,
     TextoVacioError,

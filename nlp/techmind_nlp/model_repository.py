@@ -13,7 +13,7 @@ from typing import Optional
 import joblib
 from sklearn.pipeline import Pipeline
 
-from src.exceptions import ModeloInvalidoError, ModeloNoDisponibleError
+from techmind_nlp.exceptions import ModeloInvalidoError, ModeloNoDisponibleError
 
 
 class RepositorioModelo:

@@ -122,8 +122,13 @@ origen esté en `backend/app/main.py`.
 cd /opt/techmind
 git pull
 .venv/bin/pip install -q -r backend/requirements.txt   # sólo si cambiaron
+.venv/bin/pip install -q -e ./nlp                      # sólo la primera vez
 sudo systemctl restart techmind
 ```
+
+`./nlp` es el paquete `techmind-nlp`, donde vive el procesamiento de texto.
+La API lo importa en lugar de tener su propia copia; instalado en modo
+editable, un `git pull` que lo modifique ya queda aplicado.
 
 Si cambió el modelo o la matriz, hay que regenerar los vectores de la
 búsqueda semántica, porque tienen que corresponderse fila a fila:

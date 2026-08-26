@@ -10,8 +10,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 
-from src.exceptions import ModeloInvalidoError, ModeloNoDisponibleError
-from src.model_repository import RepositorioModelo
+from techmind_nlp.exceptions import ModeloInvalidoError, ModeloNoDisponibleError
+from techmind_nlp.model_repository import RepositorioModelo
 
 
 def _crear_pipeline_entrenado() -> Pipeline:
@@ -117,7 +117,7 @@ def test_obtener_pipeline_solo_lee_disco_una_vez(tmp_path: Path):
     joblib.dump(_crear_pipeline_entrenado(), ruta)
 
     repositorio = RepositorioModelo(ruta)
-    with patch("src.model_repository.joblib.load", wraps=joblib.load) as mock_load:
+    with patch("techmind_nlp.model_repository.joblib.load", wraps=joblib.load) as mock_load:
         repositorio.obtener_pipeline()
         repositorio.obtener_pipeline()
         repositorio.obtener_pipeline()

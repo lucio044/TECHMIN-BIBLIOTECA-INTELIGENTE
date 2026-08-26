@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from src.schemas import ResultadoClasificacion
+from techmind_nlp.schemas import ResultadoClasificacion
 
 CLAVES_BASE = {"categoria", "probabilidad", "informacion_adicional"}
 
