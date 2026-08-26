@@ -45,6 +45,16 @@ class RespuestaDelHistorico(BaseModel):
 class ChatSalida(BaseModel):
     respuesta: str
 
+    # De que clase es la respuesta, para que el cliente sepa que mostrar.
+    # Sin esto pintaba las palabras que pesaron y el porcentaje de confianza
+    # al lado de un «no tengo informacion sobre eso», que es contradictorio:
+    # esos datos explican una clasificacion que justamente no se hizo.
+    #
+    #   respuesta       el historico tenia material
+    #   clasificacion   era un contenido y se clasifico
+    #   sin_informacion era una pregunta y el corpus no la cubre
+    tipo: Literal["respuesta", "clasificacion", "sin_informacion"] = "clasificacion"
+
     # La evidencia viaja aparte del texto para que el cliente pueda
     # mostrarla como quiera en vez de tener que leerla de la prosa.
     categoria: str | None = None

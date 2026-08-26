@@ -78,11 +78,19 @@ def responder_chat(texto_usuario: str, historial: list) -> dict:
     del_historico = (sintetizador.responder(texto_usuario)
                      if explicacion.parece_pregunta(texto_usuario) else None)
 
+    if del_historico:
+        tipo = "respuesta"
+    elif explicacion.parece_pregunta(texto_usuario) or resultado.probabilidad < 0.45:
+        tipo = "sin_informacion"
+    else:
+        tipo = "clasificacion"
+
     base = {
         "categoria": resultado.categoria,
         "probabilidad": resultado.probabilidad,
         "terminos_decisivos": terminos,
         "del_historico": del_historico,
+        "tipo": tipo,
     }
 
     if not hay_proveedor():

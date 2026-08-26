@@ -238,3 +238,18 @@ def test_a_un_contenido_no_se_le_busca_respuesta():
     assert j["del_historico"] is None, (
         f"le busco respuesta a un contenido: «{(j['del_historico'] or {}).get('fuente')}»")
     assert j["categoria"] == "Mobile"
+
+
+def test_no_muestra_evidencia_de_una_clasificacion_que_no_hizo():
+    """Decia «no tengo informacion» y al lado ponia los terminos y el
+    porcentaje de confianza. Esos datos explican una clasificacion, y
+    cuando se responde que no se sabe, no hubo tal decision que explicar.
+    """
+    j = client.post("/v1/chat", json={"texto": "¿Cuál es la capital de Mongolia?"}).json()
+    assert j["tipo"] == "sin_informacion"
+
+    k = client.post("/v1/chat", json={
+        "texto": "Construccion de interfaces declarativas con Kotlin y Jetpack Compose, "
+                 "manejo del estado y ciclo de vida"}).json()
+    assert k["tipo"] == "clasificacion"
+    assert k["terminos_decisivos"], "una clasificacion si lleva sus terminos"

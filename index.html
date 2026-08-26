@@ -197,6 +197,11 @@
   .peso b{ color:#8ff0e4; font-weight:600; }
   .chat-meta{ font-size:11px; color:#5c6885; margin-top:8px; }
   .chat-vacio{ color:#5c6885; font-size:13px; text-align:center; padding:26px 10px; line-height:1.6; }
+  .btn-limpiar{ float:right; font-family:inherit; font-size:11px; font-weight:600;
+                text-transform:none; letter-spacing:0; color:var(--txt2); cursor:pointer;
+                background:rgba(255,255,255,.05); border:1px solid var(--cardline);
+                border-radius:9px; padding:4px 11px; transition:.15s; }
+  .btn-limpiar:hover{ color:#fff; border-color:var(--grad1); background:rgba(109,94,252,.14); }
 
   /* respuesta armada con fragmentos del historico */
   .cita{ border-left:2px solid var(--grad2); padding:2px 0 2px 12px; margin-top:10px; }
@@ -418,7 +423,7 @@
       </div>
 
       <div class="card">
-        <div class="card-h">💬 Conversación</div>
+        <div class="card-h">💬 Conversación<button class="btn-limpiar" id="btnLimpiar" onclick="limpiarChat()" hidden>Nueva conversación</button></div>
         <div class="card-b">
           <div id="chatHilo" class="chat-hilo"></div>
           <div class="chat-envio">
@@ -983,8 +988,16 @@
      una explicacion calculada de una redactada. */
   let CHAT = [];   // historial, se manda para dar contexto a la respuesta
 
+  function limpiarChat(){
+    CHAT = [];
+    document.getElementById('chatTexto').value = '';
+    pintarChat();
+  }
+
   function pintarChat(){
     const hilo = document.getElementById('chatHilo');
+    // El boton solo tiene sentido cuando hay conversacion.
+    document.getElementById('btnLimpiar').hidden = !CHAT.length;
     if(!CHAT.length){
       hilo.innerHTML = `<div class="chat-vacio">Pegá un contenido técnico y el modelo te explica<br>por qué lo clasifica como lo clasifica.</div>`;
       return;
@@ -1015,10 +1028,13 @@
         // La respuesta viene en parrafos; sin esto se lee como un bloque.
         .replace(/\n{2,}/g, "</p><p>")
         .replace(/\n/g, "<br>");
-      // Con respuesta del historico no se muestran los terminos: explican
-      // una clasificacion que ya no es lo que se pregunto.
+      // Los terminos y el porcentaje solo acompanan a una clasificacion.
+      // Junto a «no tengo informacion sobre eso» explicarian una decision
+      // que no se tomo, y junto a una respuesta del historico hablarian de
+      // otra cosa.
+      const clasifico = m.tipo === "clasificacion";
       return `<div class="burbuja suya">${h ? "" : "<p>"+cuerpo+"</p>"}${cita}
-        ${(!h && pesos) ? `<div class="pesos">${pesos}</div>` : ""}${h ? "" : meta}</div>`;
+        ${(clasifico && pesos) ? `<div class="pesos">${pesos}</div>` : ""}${clasifico ? meta : ""}</div>`;
     }).join("");
     hilo.scrollTop = hilo.scrollHeight;
   }
@@ -1056,7 +1072,7 @@
       if(!r.ok) throw new Error(j.detail || "no se pudo responder");
       CHAT.push({rol:"assistant", contenido:j.respuesta, categoria:j.categoria,
                  probabilidad:j.probabilidad, terminos:j.terminos_decisivos, fuente:j.fuente,
-                 historico:j.del_historico});
+                 historico:j.del_historico, tipo:j.tipo});
     }catch(e){
       CHAT.push({rol:"assistant", contenido:`No se pudo consultar la API: ${e.message}`});
     }finally{
