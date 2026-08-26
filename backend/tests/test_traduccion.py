@@ -1,9 +1,11 @@
-"""Pruebas de la traducción y de lo que justifica que exista.
+"""Pruebas de la traducción a pedido.
 
-El corpus está en inglés al 95,9 % y la interfaz en español. Eso tiene dos
-consecuencias medidas, y cada una tiene su prueba acá: el clasificador
-pierde precisión con texto en castellano, y hay temas donde una consulta en
-español solo encuentra material en inglés.
+El corpus está en inglés al 95,9 % y la interfaz en español, así que hay
+temas donde una consulta en castellano solo encuentra material en inglés.
+Para eso está el botón «Ver en español» sobre los resultados.
+
+Es lo único que traduce: la clasificación no pasa por acá y no puede
+empezar a hacerlo sin que estas pruebas se quejen.
 """
 
 import pytest
@@ -102,60 +104,38 @@ def test_el_estado_dice_que_hay_disponible():
     assert set(r.json()) >= {"es_en", "en_es", "cargados"}
 
 
-# --- lo que justifica la funcion -------------------------------------------
+# --- la traduccion no toca la clasificacion --------------------------------
 
-@sin_modelo
-def test_traducir_la_entrada_mejora_la_clasificacion():
-    """Es el motivo de que exista la opción.
+def test_clasificar_no_acepta_pedidos_de_traduccion():
+    """Hubo una opción para traducir la entrada antes de clasificar.
 
-    Medido sobre veinte textos coloquiales escritos despues de decidir la
-    prueba --para no repetir el sesgo de una propuesta anterior que ganaba
-    solo en los ejemplos elegidos a mano--: el acierto pasa de 6 a 11 de 20
-    y la confianza media de 31 % a 41 %.
-
-    Aca se comprueban dos casos concretos de esa tanda.
+    Se sacó: ganaba precisión a cambio de dos segundos por petición y de una
+    respuesta que dependía de si una casilla estaba marcada. Si alguien la
+    reintroduce sin querer, esta prueba lo dice.
     """
-    casos = [
-        ("Mobile", "La aplicación se cierra sola cuando giro la pantalla del celular"),
-        ("Bases de Datos", "Guardar millones de registros y poder buscarlos rápido por fecha"),
-    ]
-    mejoras = 0
-    for esperada, texto in casos:
-        acceso._historial.clear()
-        sin = client.post("/v1/contenido",
-                          json={"titulo": texto[:50], "texto": texto}).json()
-        con = client.post("/v1/contenido",
-                          json={"titulo": texto[:50], "texto": texto,
-                                "traducir": True}).json()
-        if con["categoria"] == esperada and sin["categoria"] != esperada:
-            mejoras += 1
-
-    assert mejoras == len(casos), (
-        "traducir dejo de mejorar estos casos: si es a proposito, hay que "
-        "medir de nuevo antes de sacar la opcion")
-
-
-@sin_modelo
-def test_sin_la_opcion_la_clasificacion_no_cambia():
-    """La opción no puede alterar el comportamiento por defecto."""
-    texto = "Interfaces declarativas con Kotlin y Jetpack Compose en Android"
+    texto = "Cómo protejo las contraseñas de los usuarios de mi sitio web"
     a = client.post("/v1/contenido", json={"titulo": texto[:50], "texto": texto}).json()
     acceso._historial.clear()
     b = client.post("/v1/contenido",
-                    json={"titulo": texto[:50], "texto": texto, "traducir": False}).json()
+                    json={"titulo": texto[:50], "texto": texto, "traducir": True}).json()
+
+    # Pydantic ignora lo que no esta en el esquema: el campo no existe y el
+    # resultado tiene que ser identico.
     assert a["categoria"] == b["categoria"]
     assert a["probabilidad"] == b["probabilidad"]
 
 
-@sin_modelo
-def test_los_relacionados_siguen_saliendo_del_texto_original():
-    """Traducir la entrada no puede llevarse puesta la busqueda.
+def test_clasificar_no_depende_del_traductor():
+    """Una clasificación tiene que responder rápido y sin modelos de 342 MB.
 
-    La matriz tiene documentos en los dos idiomas: si se buscara con el
-    texto traducido, quien escribe en español dejaria de encontrar material
-    en español.
+    Se comprueba por el tiempo: traducir cuesta alrededor de un segundo y
+    medio, y clasificar unos 130 ms.
     """
+    import time
     texto = "Cómo protejo las contraseñas de los usuarios de mi sitio web"
-    con = client.post("/v1/contenido",
-                      json={"titulo": texto[:50], "texto": texto, "traducir": True}).json()
-    assert con["contenidos_relacionados"], "se quedo sin relacionados al traducir"
+    inicio = time.perf_counter()
+    r = client.post("/v1/contenido", json={"titulo": texto[:50], "texto": texto})
+    assert r.status_code == 200
+    assert time.perf_counter() - inicio < 1.0, (
+        "clasificar tardo mas de un segundo: revisar si volvio a colgarse "
+        "de la traduccion")

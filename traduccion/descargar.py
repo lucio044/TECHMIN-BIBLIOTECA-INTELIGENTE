@@ -19,10 +19,10 @@ controla. Lo que cuesta es tiempo: alrededor de segundo y medio por texto.
 POR QUÉ HACE FALTA
 
 Medido sobre el corpus: el 95,9 % está en inglés y la interfaz en español.
-Hay temas donde eso deja al usuario sin material —Mobile tiene 55
-documentos en castellano de 5.048— y además el clasificador pierde
-precisión con texto en español, porque aprendió de un corpus que casi no lo
-tiene.
+Hay temas donde eso deja al usuario leyendo en un idioma que no eligió
+—Mobile tiene 55 documentos en castellano de 5.048—. El botón «Ver en
+español» sobre los resultados es para eso, y es lo único que traduce: la
+clasificación no pasa por acá.
 """
 import sys
 import time

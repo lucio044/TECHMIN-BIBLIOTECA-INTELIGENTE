@@ -7,7 +7,6 @@ from app.ml.preprocesamiento import preparar_entrada_modelo
 # no llegara al otro. Se instala con `pip install -e ./nlp`.
 from techmind_nlp.keywords import ExtractorPalabrasClaveTfidf
 from app.ml.recomendador import cargar_recomendador
-from app.ml import traductor
 
 modelo = cargar_modelo()
 _extractor_palabras_clave = None
@@ -34,22 +33,13 @@ def clasificar_contenido(entrada: ContenidoEntrada) -> ContenidoSalida:
             detail="El modelo de clasificación aún no está disponible. Intenta más tarde.",
         )
 
-    # Con `traducir`, el texto pasa al ingles antes de clasificar. El
-    # modelo aprendio de un corpus 95,9% en ese idioma, asi que un texto en
-    # castellano le llega en desventaja: medido sobre veinte textos
-    # coloquiales nuevos, el acierto sube de 6 a 11 de 20.
-    #
-    # Los relacionados se buscan igual con el texto ORIGINAL: la matriz
-    # tiene documentos en los dos idiomas y traducir ahi no aporta, mientras
-    # que perder el texto original si haria que un usuario en español no
-    # encuentre nunca material en español.
-    texto_original = preparar_entrada_modelo(entrada.titulo, entrada.texto)
-    texto_preparado = texto_original
-
-    if getattr(entrada, "traducir", False):
-        traducido = traductor.traducir(f"{entrada.titulo}. {entrada.texto}", "en")
-        if traducido:
-            texto_preparado = preparar_entrada_modelo("", traducido)
+    # Se clasifica el texto tal como lo escribieron. Hubo una opcion para
+    # traducirlo al ingles antes --el modelo aprendio de un corpus 95,9% en
+    # ese idioma-- y se saco: ganaba precision a cambio de dos segundos por
+    # peticion y de una respuesta que dependia de si una casilla estaba
+    # marcada. La traduccion quedo donde se pide y se ve: el boton «Ver en
+    # español» sobre resultados que volvieron en ingles.
+    texto_preparado = preparar_entrada_modelo(entrada.titulo, entrada.texto)
 
     proba = modelo.predict_proba([texto_preparado])[0]
     idx = proba.argmax()
@@ -87,7 +77,7 @@ def clasificar_contenido(entrada: ContenidoEntrada) -> ContenidoSalida:
             # No se filtra, se reordena: si la categoria tiene pocos documentos
             # parecidos, los del resto siguen estando y la seccion no queda
             # vacia. Dentro de cada grupo se respeta el orden por similitud.
-            relacionados_raw = recomendador.recomendar(texto_original, top_n=12)
+            relacionados_raw = recomendador.recomendar(texto_preparado, top_n=12)
             del_tema = [r for r in relacionados_raw if r["categoria"] == categoria_ganadora]
             del_resto = [r for r in relacionados_raw if r["categoria"] != categoria_ganadora]
             contenidos_relacionados = [

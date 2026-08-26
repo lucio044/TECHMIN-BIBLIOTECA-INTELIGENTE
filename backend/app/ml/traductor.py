@@ -1,23 +1,23 @@
 """Traduccion entre español e ingles, sin servicios externos.
 
 Hace falta por una asimetria medida: el corpus esta en ingles al 95,9% y la
-interfaz en español. Eso se nota en dos lugares distintos.
+interfaz en español. Hay temas --Mobile tiene 55 documentos en castellano de
+5.048-- donde una consulta en español solo encuentra material en ingles.
 
-QUE SE MIDIO
+QUE TRADUCE Y QUE NO
 
-Clasificando cuarenta textos tecnicos escritos en castellano, el acierto
-fue 29 de 40. Los mismos conceptos escritos en ingles acertaban el doble
-entre los casos dificiles. Con veinte textos coloquiales --«la pantalla se
-ve mal desde el celular»-- el acierto cae a 6 de 20.
+Solo lo que alguien pide leer: el boton «Ver en español» sobre resultados
+que volvieron en ingles. No traduce lo que se clasifica.
 
-Traducir la entrada al ingles antes de clasificar sube esos veinte a 11, y
-la confianza media de 31% a 41%. Se valido a ciegas, con textos escritos
-despues de decidir la prueba, porque una propuesta anterior --clasificar
-por vecinos-- ganaba en los ejemplos elegidos a mano y perdia contra el
-corpus real.
+Se probo lo otro --pasar la entrada al ingles antes de clasificar, ya que el
+modelo aprendio en ese idioma-- y subia el acierto de 6 a 11 sobre veinte
+textos coloquiales. Se descarto igual: costaba 1,4 segundos por peticion
+contra los 126 ms de una clasificacion normal, y hacia que el resultado
+dependiera de una casilla marcada. Una pagina donde el mismo texto da dos
+categorias segun una casilla es peor que una que acierta un poco menos.
 
-Cuesta 1,4 segundos por texto, contra los 126 ms de una clasificacion
-normal. Por eso no se aplica siempre: se ofrece.
+Traducir a pedido no tiene ese problema: el texto es el que es, y quien no
+lee ingles toca el boton.
 
 POR QUE ONNX Y NO UN SERVICIO DE TRADUCCION
 
@@ -46,13 +46,21 @@ IDIOMAS = ("es", "en")
 # Marcas de que un texto esta en castellano. No es deteccion de idioma
 # seria: alcanza para decidir en que direccion traducir, y se equivoca
 # hacia el lado barato --dejar el texto como esta.
+#
+# Las mismas listas estan en index.html, que decide si ofrecer el boton.
+# Si se tocan aca, se tocan alla: el servidor traduciria en una direccion
+# distinta de la que anuncia el boton.
 _ACENTOS = re.compile(r"[áéíóúñü¿¡]", re.IGNORECASE)
 _FUNCIONALES_ES = re.compile(
     r"\b(de|la|el|los|las|un|una|que|con|para|por|del|al|se|su|es|son|"
-    r"como|cuando|donde|pero|mas|muy|todo|este|esta|hay)\b", re.IGNORECASE)
+    r"como|cuando|donde|pero|mas|muy|todo|este|esta|hay|sobre|entre|"
+    r"desde|hasta|sin|cual|cuales|porque|si|no|lo|mi|tiene|puedo|hacer|"
+    r"mejor|nuestro)\b", re.IGNORECASE)
 _FUNCIONALES_EN = re.compile(
     r"\b(the|of|and|to|in|is|are|for|with|that|this|from|by|on|as|"
-    r"you|your|it|be|have|has|can|will|not)\b", re.IGNORECASE)
+    r"you|your|it|be|have|has|can|will|not|how|do|does|did|what|when|"
+    r"where|why|which|an|or|if|should|would|could|about|between|over|"
+    r"under|than|best|my)\b", re.IGNORECASE)
 
 # Un texto mas largo que esto se parte: el modelo trunca a 384 tokens y lo
 # que sobra se perderia en silencio.

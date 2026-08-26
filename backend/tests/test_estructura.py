@@ -135,3 +135,43 @@ def test_el_procesamiento_de_texto_no_esta_duplicado():
     clasificador = io.open(APP / "services" / "clasificador.py", encoding="utf-8").read()
     assert "from techmind_nlp.keywords import" in clasificador
     assert "from app.ml.keywords" not in clasificador
+
+
+# --- la pagina -------------------------------------------------------------
+
+PAGINA = APP.parents[1] / "index.html"
+
+
+def test_la_pagina_no_tiene_caracteres_de_control():
+    """Un `\\b` escrito mal deja un retroceso literal, y no se ve.
+
+    Paso de verdad: las dos expresiones que detectan el idioma tenian un
+    0x08 en lugar del escape, asi que no matcheaban nada, `pareceIngles()`
+    devolvia siempre falso y el boton «Ver en español» no llego a aparecer
+    nunca. Un caracter invisible dentro de una expresion regular no rompe
+    la sintaxis: la deja sin hacer nada.
+    """
+    texto = io.open(PAGINA, encoding="utf-8").read()
+    culpables = {
+        n: repr(linea.strip()[:60])
+        for n, linea in enumerate(texto.splitlines(), 1)
+        # tabulador y salto de linea son legitimos; el resto de los de
+        # control no tienen nada que hacer en un archivo fuente.
+        if any(c in linea for c in "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x1b")
+    }
+    assert not culpables, f"caracteres de control en index.html: {culpables}"
+
+
+def test_la_pagina_detecta_el_idioma_con_limites_de_palabra():
+    """Sin los `\\b`, las listas matchean dentro de las palabras.
+
+    «autenticacion con tokens» daba ingles por el «to» de «tokens» y el
+    «on» de «autenticacion»: sobre treinta consultas, 13 aciertos contra
+    28 con los limites puestos.
+    """
+    texto = io.open(PAGINA, encoding="utf-8").read()
+    for nombre in ("FUNC_ES", "FUNC_EN"):
+        m = re.search(rf"const {nombre}\s*=\s*(/.*?/gi);", texto)
+        assert m, f"no se encontro {nombre} en la pagina"
+        assert m.group(1).startswith("/\\b") and m.group(1).endswith("\\b/gi"), (
+            f"{nombre} perdio los limites de palabra: {m.group(1)[:40]}")
