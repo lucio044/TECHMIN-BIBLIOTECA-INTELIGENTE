@@ -215,7 +215,7 @@ curl -G https://15-229-103-244.sslip.io/v1/semantica   --data-urlencode "consult
       "extracto": "..."
     },
     {
-      "titulo": "The Best Password Tips and Tricks",
+      "titulo": "How to verify a users password using github.com/go-ldap/ldap/v3",
       "categoria": "Seguridad",
       "parecido": 0.66,
       "extracto": "..."
@@ -224,8 +224,21 @@ curl -G https://15-229-103-244.sslip.io/v1/semantica   --data-urlencode "consult
 }
 ```
 
-Esa misma consulta en `/buscar` devuelve **cero resultados**: ninguna de sus
-palabras aparece en el corpus, que está en inglés al 95,9 %.
+La misma consulta en `/buscar` también devuelve diez documentos, pero de otra
+clase: los que contienen literalmente la palabra «contraseñas», que son los
+pocos en español. El segundo es *Aprende a Programar en Python Desde Cero*,
+que no viene al caso.
+
+Contando cuántos resultados están en inglés:
+
+| | resultados | en inglés |
+|---|--:|--:|
+| `/buscar` | 10 | 2 |
+| `/semantica` | 10 | 7 |
+
+Ahí está la diferencia. *How to verify a users password* no comparte ninguna
+palabra con la consulta, así que la búsqueda por términos no puede
+alcanzarlo por más alto que sea su parecido real.
 
 `parecido` es el coseno entre significados, de -1 a 1. Por debajo de 0,48 no
 se devuelve nada. El corte se buscó midiendo 12 consultas técnicas contra 10
