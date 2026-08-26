@@ -12,6 +12,15 @@ class ModeloPropio(Base):
     __tablename__ = "modelos_propios"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+
+    # Quien lo entreno. Sale de la clave de API, o de la IP cuando se usa
+    # sin credenciales. Sin esta columna cualquier cliente podia listar,
+    # usar y borrar los modelos de los demas: la identidad se calculaba
+    # para el limite de peticiones y despues se tiraba.
+    #
+    # Va indexada porque toda consulta filtra por ella.
+    duenio: Mapped[str] = mapped_column(String(80), index=True)
+
     nombre: Mapped[str] = mapped_column(String(80))
     # El Pipeline serializado. Pesa entre 1 y 3 MB con los limites actuales
     # --20.000 filas y 30.000 terminos-- asi que entra comodo en la fila.

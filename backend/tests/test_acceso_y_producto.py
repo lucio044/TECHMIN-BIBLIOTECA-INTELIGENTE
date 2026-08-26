@@ -216,3 +216,52 @@ def test_clasificar_con_un_modelo_que_no_existe_da_404():
         json={"texto": "un texto cualquiera con largo suficiente para pasar"},
     )
     assert r.status_code == 404
+
+
+# --- el historial no puede crecer para siempre ----------------------------
+
+def test_el_historial_descarta_a_quien_no_vuelve():
+    """Cada visitante dejaba una entrada que no se borraba nunca.
+
+    El diccionario solo crecia: con visitas suficientes son decenas de MB
+    retenidos por clientes que ya no estan.
+    """
+    import time
+
+    acceso._historial.clear()
+    acceso._ultima_limpieza = 0.0
+
+    # Mil clientes de hace mas de una ventana
+    viejo = time.monotonic() - acceso.VENTANA_SEGUNDOS - 10
+    for i in range(1000):
+        acceso._historial[f"ip:10.0.0.{i}"].append(viejo)
+
+    # Uno actual, que tiene que sobrevivir
+    acceso._historial["ip:actual"].append(time.monotonic())
+
+    assert len(acceso._historial) == 1001
+
+    acceso._ultima_limpieza = 0.0
+    acceso._limpiar_historial(time.monotonic())
+
+    assert "ip:actual" in acceso._historial
+    assert len(acceso._historial) == 1, (
+        f"quedaron {len(acceso._historial)} entradas de clientes que ya no estan")
+
+
+def test_la_limpieza_no_corre_en_cada_peticion():
+    """Recorrer todo el diccionario en cada peticion seria peor que la fuga."""
+    import time
+
+    acceso._historial.clear()
+    ahora = time.monotonic()
+    acceso._ultima_limpieza = ahora
+
+    viejo = ahora - acceso.VENTANA_SEGUNDOS - 10
+    acceso._historial["ip:vieja"].append(viejo)
+
+    acceso._limpiar_historial(ahora + 1)   # solo un segundo despues
+    assert "ip:vieja" in acceso._historial, "limpio antes de tiempo"
+
+    acceso._limpiar_historial(ahora + acceso.INTERVALO_LIMPIEZA + 1)
+    assert "ip:vieja" not in acceso._historial

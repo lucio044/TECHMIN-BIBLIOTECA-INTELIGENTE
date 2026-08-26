@@ -14,6 +14,18 @@ Con base de datos configurada, el Pipeline entrenado se guarda serializado
 en la fila y sobrevive a los reinicios. Sin base queda en memoria del
 proceso, para que la demo publica funcione igual sin depender de un
 servidor externo.
+
+CADA MODELO TIENE DUEÑO
+
+Todas las operaciones piden quien las hace y filtran por eso. Sin ese
+filtro un cliente podia listar los modelos de los demas --con sus nombres,
+sus taxonomias y sus conteos-- y ademas usarlos y borrarlos. La identidad
+se calculaba para el limite de peticiones y despues se descartaba.
+
+El dueño es la clave de API cuando la hay, y la IP cuando no. Eso significa
+que sin clave el aislamiento vale lo que vale una IP: dos personas tras el
+mismo router comparten modelos. Se declara en vez de disimularse; para
+separacion de verdad hace falta una clave.
 """
 
 import csv
@@ -51,6 +63,12 @@ COLUMNAS_TEXTO = ("texto", "contenido", "text", "content")
 COLUMNAS_CATEGORIA = ("categoria", "categoría", "etiqueta", "label", "category")
 
 _PATRON_PERMITIDO = re.compile(r"[^áéíóúüñÁÉÍÓÚÑA-Za-z0-9\s\+\#\.\_\-\/]")
+
+# Las etiquetas y las comillas se van del nombre del modelo y de las
+# categorias. Vienen del CSV de quien sube, y despues se pintan en una
+# pagina: aunque el cliente las escape, la API no tiene por que devolver
+# algo que solo sirve para inyectar.
+_PATRON_MARCADO = re.compile(r"[<>\"'`]")
 _PATRON_ESPACIOS = re.compile(r"\s+")
 
 _modelos: Dict[str, dict] = {}
@@ -63,6 +81,10 @@ def _limpiar(texto: str) -> str:
     return _PATRON_ESPACIOS.sub(" ", texto).strip()
 
 
+def _sin_marcado(texto: str) -> str:
+    return _PATRON_MARCADO.sub("", str(texto)).strip()
+
+
 def _elegir_columna(cabeceras, candidatas):
     normalizadas = {c.strip().lower(): c for c in cabeceras if c}
     for candidata in candidatas:
@@ -71,7 +93,7 @@ def _elegir_columna(cabeceras, candidatas):
     return None
 
 
-async def entrenar(archivo: UploadFile, nombre: str) -> dict:
+async def entrenar(archivo: UploadFile, nombre: str, duenio: str) -> dict:
     """Entrena un modelo con el CSV del cliente y lo deja disponible."""
     if not hay_base() and len(_modelos) >= MAX_MODELOS:
         raise HTTPException(
@@ -113,7 +135,7 @@ async def entrenar(archivo: UploadFile, nombre: str) -> dict:
         if i >= MAX_FILAS:
             break
         t = _limpiar(fila.get(col_texto) or "")
-        c = (fila.get(col_cat) or "").strip()
+        c = _sin_marcado(fila.get(col_cat) or "")
         if t and c:
             textos.append(t)
             etiquetas.append(c)
@@ -155,7 +177,7 @@ async def entrenar(archivo: UploadFile, nombre: str) -> dict:
 
     identificador = uuid.uuid4().hex[:12]
     ficha = {
-        "nombre": nombre,
+        "nombre": _sin_marcado(nombre) or "sin nombre",
         "categorias": sorted(cuenta),
         "ejemplos": len(textos),
         "distribucion": dict(cuenta.most_common()),
@@ -168,36 +190,46 @@ async def entrenar(archivo: UploadFile, nombre: str) -> dict:
         buffer = io.BytesIO()
         joblib.dump(modelo, buffer, compress=3)
         with SessionLocal() as db:
-            fila = ModeloPropio(id=identificador, artefacto=buffer.getvalue(), **ficha)
+            fila = ModeloPropio(id=identificador, duenio=duenio,
+                                artefacto=buffer.getvalue(), **ficha)
             db.add(fila)
             db.commit()
             db.refresh(fila)
             return {"id": identificador, **ficha,
                     "entrenado": fila.entrenado.isoformat(timespec="seconds")}
 
-    _modelos[identificador] = {"modelo": modelo, **ficha}
+    _modelos[identificador] = {"modelo": modelo, "duenio": duenio, **ficha}
     return {"id": identificador, **ficha,
             "entrenado": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
 @lru_cache(maxsize=8)
-def _cargar_de_base(identificador: str):
+def _cargar_de_base(identificador: str, duenio: str):
     """Trae el Pipeline de la base y lo deja en cache.
 
     Sin la cache, cada clasificacion leeria y deserializaria varios MB. Con
     ocho modelos en memoria alcanza para el uso real, y los que salgan de la
     cache se vuelven a leer sin que nadie lo note.
+
+    El dueño forma parte de la clave de la cache a proposito: asi un modelo
+    cacheado no puede servirse a quien no le corresponde.
     """
     with SessionLocal() as db:
         fila = db.get(ModeloPropio, identificador)
-        if fila is None:
+        if fila is None or fila.duenio != duenio:
             return None
         return {"modelo": joblib.load(io.BytesIO(fila.artefacto)), "nombre": fila.nombre}
 
 
-def clasificar(identificador: str, texto: str, top_n: int = 3) -> dict:
+def clasificar(identificador: str, duenio: str, texto: str, top_n: int = 3) -> dict:
     """Clasifica un texto con el modelo propio del cliente."""
-    guardado = _cargar_de_base(identificador) if hay_base() else _modelos.get(identificador)
+    if hay_base():
+        guardado = _cargar_de_base(identificador, duenio)
+    else:
+        guardado = _modelos.get(identificador)
+        # Mismo criterio que con base: un modelo ajeno no existe.
+        if guardado is not None and guardado.get("duenio") != duenio:
+            guardado = None
     if guardado is None:
         detalle = (
             "No existe ese modelo."
@@ -228,13 +260,15 @@ def clasificar(identificador: str, texto: str, top_n: int = 3) -> dict:
     }
 
 
-def listar() -> list:
+def listar(duenio: str) -> list:
+    """Los modelos de quien pregunta, y solo esos."""
     if not hay_base():
         return [
             {"id": k,
              "entrenado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-             **{x: y for x, y in v.items() if x != "modelo"}}
+             **{x: y for x, y in v.items() if x not in ("modelo", "duenio")}}
             for k, v in _modelos.items()
+            if v.get("duenio") == duenio
         ]
 
     # Se piden solo las columnas que se muestran: traer el artefacto de cada
@@ -244,6 +278,7 @@ def listar() -> list:
             select(ModeloPropio.id, ModeloPropio.nombre, ModeloPropio.categorias,
                    ModeloPropio.distribucion, ModeloPropio.ejemplos,
                    ModeloPropio.f1_macro, ModeloPropio.entrenado)
+            .where(ModeloPropio.duenio == duenio)
         ).all()
         return [
             {"id": f.id, "nombre": f.nombre, "categorias": f.categorias,
@@ -254,15 +289,22 @@ def listar() -> list:
         ]
 
 
-def eliminar(identificador: str) -> None:
+def eliminar(identificador: str, duenio: str) -> None:
+    """Descarta un modelo propio.
+
+    A quien no es el dueño se le responde que no existe, y no que no puede:
+    decirle que existe pero es de otro ya seria contarle algo.
+    """
     if not hay_base():
-        if _modelos.pop(identificador, None) is None:
+        guardado = _modelos.get(identificador)
+        if guardado is None or guardado.get("duenio") != duenio:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese modelo.")
+        del _modelos[identificador]
         return
 
     with SessionLocal() as db:
         fila = db.get(ModeloPropio, identificador)
-        if fila is None:
+        if fila is None or fila.duenio != duenio:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese modelo.")
         db.delete(fila)
         db.commit()

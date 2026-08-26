@@ -123,10 +123,22 @@ Type=exec
 User=$USUARIO
 WorkingDirectory=$DESTINO/backend
 EnvironmentFile=/etc/techmind.env
-ExecStart=$DESTINO/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+ExecStart=$DESTINO/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 
-# Cada worker carga su propia copia del modelo, unos 270 MB. Con dos
-# workers son 540 MB: entra en una instancia de 1 GB, no en una de 512 MB.
+# UN worker, a proposito.
+#
+# El limite de peticiones y la cache de modelos propios viven en memoria
+# del proceso. Con dos workers cada uno contaba por su cuenta: medido en
+# produccion, 80 peticiones concurrentes pasaban 60 en vez de 30, y un
+# modelo borrado seguia sirviendose desde la cache del otro worker.
+#
+# Un solo proceso no limita el rendimiento aca: las rutas son sincronas,
+# asi que FastAPI las atiende en su grupo de hilos y varias peticiones
+# avanzan a la vez. El trabajo real son unos 10 ms.
+#
+# El dia que un proceso no alcance, el limite y la cache tienen que
+# mudarse a un almacen compartido --Redis-- antes de agregar workers.
+# Subir el numero sin eso vuelve a romper las dos cosas en silencio.
 
 Restart=always
 RestartSec=3

@@ -1,9 +1,13 @@
 """Control de acceso: claves de API y limite de peticiones.
 
-El limite se lleva en memoria del proceso. Alcanza para un servicio en una
-sola instancia, que es el caso: con varias replicas cada una contaria por su
-cuenta y el limite real seria el doble o el triple. Para eso hace falta un
-almacen compartido tipo Redis, y se anota como deuda, no se simula.
+El limite se lleva en memoria del proceso, asi que el servicio corre con un
+solo worker. No es un detalle de configuracion: con dos, cada uno contaba
+por su cuenta y el limite real era el doble. Medido en produccion, 80
+peticiones concurrentes pasaban 60 en vez de 30 --en serie no se notaba,
+porque el proxy reutilizaba la conexion y daba siempre con el mismo worker.
+
+Antes de agregar workers o replicas, esto tiene que mudarse a un almacen
+compartido tipo Redis. Subir el numero sin eso rompe el limite en silencio.
 
 Se permite el uso anonimo a proposito, con un limite bajo. La demo publica
 tiene que funcionar sin que nadie pida una clave, y al mismo tiempo un
@@ -55,6 +59,28 @@ def _claves_validas() -> set:
 # El historial de cada cliente: los instantes de sus ultimas peticiones.
 _historial: Dict[str, Deque[float]] = defaultdict(deque)
 
+# Cada visitante nuevo dejaba una entrada que no se borraba nunca: un
+# diccionario que solo crece. Con visitas suficientes son decenas de MB
+# retenidos por clientes que ya no estan.
+_ultima_limpieza = 0.0
+INTERVALO_LIMPIEZA = 300
+
+
+def _limpiar_historial(ahora: float) -> None:
+    """Descarta a los clientes que no vuelven.
+
+    Se pasa por todo el diccionario, asi que no conviene hacerlo en cada
+    peticion: cada cinco minutos alcanza, y entre medio lo unico que sobra
+    son las entradas de quienes dejaron de venir en ese rato.
+    """
+    global _ultima_limpieza
+    if ahora - _ultima_limpieza < INTERVALO_LIMPIEZA:
+        return
+    _ultima_limpieza = ahora
+    for clave in [c for c, m in _historial.items()
+                  if not m or ahora - m[-1] >= VENTANA_SEGUNDOS]:
+        del _historial[clave]
+
 
 def _consumir(cliente: Cliente) -> tuple[int, float]:
     """Registra una peticion y devuelve cuantas quedan y cuando se renueva.
@@ -64,6 +90,7 @@ def _consumir(cliente: Cliente) -> tuple[int, float]:
     minuto y otro tanto al principio del siguiente.
     """
     ahora = time.monotonic()
+    _limpiar_historial(ahora)
     marcas = _historial[cliente.identificador]
 
     while marcas and ahora - marcas[0] >= VENTANA_SEGUNDOS:

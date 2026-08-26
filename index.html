@@ -588,7 +588,24 @@
     try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
     return SEED();
   }
-  function guardar(){ try{ localStorage.setItem(KEY, JSON.stringify(BIB)); }catch(e){} }
+  /* Cuando el navegador se queda sin cuota --unos 5 MB-- setItem lanza. Antes
+     se ignoraba en silencio: la biblioteca dejaba de guardarse y el visitante
+     lo descubria al volver y encontrarla incompleta. */
+  let AVISO_CUOTA = false;
+  function guardar(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify(BIB));
+      AVISO_CUOTA = false;
+    }catch(e){
+      if(!AVISO_CUOTA){
+        AVISO_CUOTA = true;
+        alert("Tu biblioteca llenó el espacio que guarda el navegador.\n\n"
+            + "Lo que clasifiques a partir de ahora no se va a conservar al "
+            + "cerrar la página. Borrá contenidos viejos desde la Biblioteca "
+            + "para hacer lugar.");
+      }
+    }
+  }
   function agregar(item){ BIB.unshift(item); guardar(); actualizarContadores(); }
 
   function SEED(){
@@ -1145,11 +1162,19 @@
     caja.innerHTML = '<div class="spinner"></div>';
     try{
       // A los dos modelos el mismo texto, en paralelo.
+      // Las dos comprueban el estado antes de leer el cuerpo: un error de la
+      // API devuelve un JSON perfectamente valido, y sin mirar el codigo se
+      // pinta como si fuera un resultado.
+      const leer = async r => {
+        const j = await r.json();
+        if(!r.ok) throw new Error(typeof j.detail === "string" ? j.detail : `HTTP ${r.status}`);
+        return j;
+      };
       const [fab, pro] = await Promise.all([
         fetch(API+"/contenido",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({titulo:"Consulta", texto})}).then(r=>r.json()),
+          body:JSON.stringify({titulo:"Consulta", texto})}).then(leer),
         fetch(`${API}/modelos/${MODELO_PROPIO.id}/clasificar`,{method:"POST",
-          headers:{"Content-Type":"application/json"}, body:JSON.stringify({texto})}).then(r=>r.json())
+          headers:{"Content-Type":"application/json"}, body:JSON.stringify({texto})}).then(leer)
       ]);
       const fila = (etq, cat, p, tono) => `
         <div class="rel" style="border-color:${tono}44">
@@ -1161,7 +1186,7 @@
         </div>`;
       caja.innerHTML =
         fila("Modelo de fábrica · 8 categorías técnicas", fab.categoria, fab.probabilidad, "#f59e0b") +
-        fila(`Tu modelo · ${(MODELO_PROPIO.categorias||[]).join(" / ")}`, pro.categoria, pro.probabilidad, "#23d5c8") +
+        fila(`Tu modelo · ${esc((MODELO_PROPIO.categorias||[]).join(" / "))}`, pro.categoria, pro.probabilidad, "#23d5c8") +
         `<div class="rel-nota" style="text-align:left">Los dos aciertan, pero responden preguntas distintas: uno dice de qué habla, el otro qué es. Ninguna de las 8 etiquetas de fábrica puede dar la segunda respuesta.</div>`;
     }catch(e){
       caja.innerHTML = `<div class="err">${esc(e.message)}</div>`;
