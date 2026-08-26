@@ -38,6 +38,21 @@ SIN_CONTENIDO = {
 }
 
 
+# Una pregunta y un contenido para clasificar piden respuestas distintas.
+# A «¿que es una botnet?» hay que contestarle que no se sabe cuando no se
+# sabe; a un parrafo tecnico corresponde decir en que categoria cae.
+_INTERROGA = re.compile(
+    r"^\s*[¿?]|[?¿]\s*$|"
+    r"^\s*(que|qu[eé]|cual|cu[aá]l|como|c[oó]mo|cuando|cu[aá]ndo|donde|d[oó]nde|"
+    r"quien|qui[eé]n|por qu[eé]|para qu[eé]|explica|explicame|expl[ií]came|define|dime)\b",
+    re.IGNORECASE,
+)
+
+
+def parece_pregunta(texto: str) -> bool:
+    return bool(_INTERROGA.search(texto or ""))
+
+
 def _es_util(termino: str) -> bool:
     partes = termino.split()
     if all(p in SIN_CONTENIDO for p in partes):
@@ -94,6 +109,59 @@ def _enumerar(cosas: List[str]) -> str:
     return ", ".join(cosas[:-1]) + " y " + cosas[-1]
 
 
+def _con_respuesta(h: dict) -> str:
+    """Presenta lo que dice el corpus, con la fuente por delante.
+
+    El texto son fragmentos literales, asi que la unica redaccion posible
+    es la que los enmarca: de donde salieron y contra cuanto se buscaron.
+    """
+    docs = f"{h['documentos_consultados']:,}".replace(",", ".")
+    cuantos = len(h["fragmentos"])
+
+    cabeza = (
+        f"Sí, hay algo sobre eso. Lo que sigue sale de **{h['fuente']}**, "
+        f"un documento de {h['categoria'].lower()} del histórico"
+        + (f", en {cuantos} fragmentos:" if cuantos > 1 else ":")
+    )
+
+    cuerpo = "\n\n".join(f["texto"] for f in h["fragmentos"])
+
+    cola = (
+        f"Lo encontré comparando tu pregunta con los {docs} documentos del "
+        f"histórico; este fue el más cercano. No lo redacté yo: es texto del "
+        f"documento, así que podés ir a la fuente y comprobarlo."
+    )
+    return f"{cabeza}\n\n{cuerpo}\n\n{cola}"
+
+
+def _sin_respuesta(texto: str, resultado) -> str:
+    """Dice que no sabe, en lugar de contestar otra cosa.
+
+    Antes explicaba en que categoria caia la pregunta, que a quien pregunto
+    algo no le sirve de nada y ademas suena a que el sistema no entendio.
+    """
+    partes = ["No tengo información sobre eso en mi base."]
+
+    if parece_pregunta(texto):
+        partes.append(
+            "Busqué entre los 38.257 documentos del histórico y ninguno trata "
+            "el tema."
+        )
+    else:
+        partes.append(
+            f"Tampoco alcanza para clasificarlo: lo más parecido sería "
+            f"{resultado.categoria}, pero con {resultado.probabilidad:.0%} de "
+            f"confianza eso no significa nada."
+        )
+
+    partes.append(
+        "El histórico es contenido técnico —programación, bases de datos, "
+        "seguridad, redes, móvil y ciencia de datos—. Si tu pregunta cae ahí, "
+        "probá con otras palabras; si no, es tema que no cubre."
+    )
+    return " ".join(partes)
+
+
 def redactar(texto: str, resultado, del_historico=None) -> str:
     """Arma una explicacion en prosa a partir de lo que el modelo calculo.
 
@@ -106,23 +174,15 @@ def redactar(texto: str, resultado, del_historico=None) -> str:
     respuesta, no en que categoria cae su pregunta.
     """
     if del_historico:
-        partes = len(del_historico["fragmentos"])
-        cabeza = (
-            f"Segun **{del_historico['fuente']}**, del historico"
-            f"{' (' + str(partes) + ' fragmentos)' if partes > 1 else ''}:"
-        )
-        cuerpo = " ".join(f["texto"] for f in del_historico["fragmentos"])
-        # Se recorta para la prosa; los fragmentos completos viajan aparte
-        # en la respuesta, para que el cliente los muestre enteros.
-        if len(cuerpo) > 900:
-            cuerpo = cuerpo[:900].rsplit(" ", 1)[0] + "…"
-        cola = (
-            f" Se compararon {del_historico['documentos_consultados']:,} documentos "
-            f"y este fue el mas cercano ({del_historico['parecido']:.2f})."
-        ).replace(",", ".")
-        return f"{cabeza} {cuerpo}{cola}"
+        return _con_respuesta(del_historico)
 
     _, _, terminos = terminos_decisivos(texto)
+
+    # Sin nada en el historico y sin una clasificacion firme, no hay
+    # respuesta que dar. Decirlo es mas util que explicar en que categoria
+    # cayo una pregunta que no se supo contestar.
+    if parece_pregunta(texto) or resultado.probabilidad < 0.45:
+        return _sin_respuesta(texto, resultado)
 
     categoria = resultado.categoria
     confianza = resultado.probabilidad

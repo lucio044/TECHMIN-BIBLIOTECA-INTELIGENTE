@@ -1010,10 +1010,14 @@
         : "";
       // Solo se interpretan los **negritas** que pone la explicacion; el
       // resto del texto va escapado.
-      const cuerpo = esc(m.contenido).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+      const cuerpo = esc(m.contenido)
+        .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+        // La respuesta viene en parrafos; sin esto se lee como un bloque.
+        .replace(/\n{2,}/g, "</p><p>")
+        .replace(/\n/g, "<br>");
       // Con respuesta del historico no se muestran los terminos: explican
       // una clasificacion que ya no es lo que se pregunto.
-      return `<div class="burbuja suya">${h ? "" : cuerpo}${cita}
+      return `<div class="burbuja suya">${h ? "" : "<p>"+cuerpo+"</p>"}${cita}
         ${(!h && pesos) ? `<div class="pesos">${pesos}</div>` : ""}${h ? "" : meta}</div>`;
     }).join("");
     hilo.scrollTop = hilo.scrollHeight;

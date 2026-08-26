@@ -133,3 +133,50 @@ def test_sin_respuesta_del_historico_explica_la_clasificacion():
     assert j["del_historico"] is None
     assert j["categoria"], "tiene que seguir clasificando"
     assert len(j["respuesta"]) > 50
+
+
+# --- como suena la respuesta ----------------------------------------------
+
+def test_dice_que_no_sabe_en_lugar_de_clasificar_la_pregunta():
+    """A quien pregunta algo que el corpus no cubre hay que decirselo.
+
+    Antes contestaba en que categoria caia su pregunta, que no le sirve de
+    nada y ademas suena a que el sistema no entendio.
+    """
+    j = client.post("/v1/chat", json={"texto": "¿Cuál es la capital de Mongolia?"}).json()
+    r = j["respuesta"].lower()
+
+    assert "no tengo información" in r or "no tengo informacion" in r
+    assert "clasific" not in r.split("el histórico es")[0], (
+        "a una pregunta sin respuesta no se le habla de clasificacion")
+
+
+def test_a_un_contenido_si_le_explica_la_clasificacion():
+    """Lo anterior no puede haberse llevado puesto el modo original."""
+    j = client.post("/v1/chat", json={
+        "texto": "Construccion de interfaces declarativas con Kotlin y Jetpack Compose, "
+                 "manejo del estado y ciclo de vida de las actividades"}).json()
+    assert j["categoria"] == "Mobile"
+    assert j["terminos_decisivos"], "tiene que decir que terminos pesaron"
+
+
+@sin_material
+def test_la_respuesta_dice_de_donde_salio_y_que_no_la_redacto():
+    """Sin esa aclaracion, el lector no sabe si leyo una cita o una opinion."""
+    j = client.post("/v1/chat", json={"texto": "que es cross site scripting"}).json()
+    r = j["respuesta"]
+    assert j["del_historico"]["fuente"] in r
+    assert "no lo redacté yo" in r.lower()
+
+
+def test_distingue_una_pregunta_de_un_contenido():
+    from app.services.explicacion import parece_pregunta
+
+    for pregunta in ("¿Qué es una botnet?", "que es cross site scripting",
+                     "explicame el modelo relacional", "define que es una API"):
+        assert parece_pregunta(pregunta), f"«{pregunta}» es una pregunta"
+
+    for contenido in ("quesadilla de queso y jamon",
+                      "comodin para buscar archivos",
+                      "optimizar consultas con indices en PostgreSQL"):
+        assert not parece_pregunta(contenido), f"«{contenido}» no es una pregunta"
