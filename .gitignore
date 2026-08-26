@@ -24,3 +24,7 @@ __pycache__/
 .venv/
 venv/
 .env
+
+# El modelo de embeddings son 122 MB y no es nuestro: lo publica su autor
+# y el servicio lo descarga al arrancar. Ver semantica/descargar_modelo.py
+semantica/modelo/

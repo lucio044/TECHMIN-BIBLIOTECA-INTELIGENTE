@@ -30,3 +30,9 @@ python-multipart==0.0.20
 
 # Conector de PostgreSQL, para Neon y similares
 psycopg[binary]==3.2.3
+
+# Busqueda semantica. Se usa ONNX y no sentence-transformers porque esa
+# libreria arrastra torch: 800 MB instalados y varios cientos en memoria,
+# que no entran junto al resto en una instancia de 2 GB.
+onnxruntime==1.26.0
+tokenizers==0.22.2

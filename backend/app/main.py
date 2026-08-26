@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.routers import (health, contenido, categorias, chat, modelo, biblioteca,
                          sugerencias, busqueda, lote, metricas, correcciones,
-                         modelos_propios)
+                         modelos_propios, semantica)
 from app.core.config import settings
 from app.ml.loader import cargar_modelo
 from app.ml.recomendador import cargar_recomendador
 from app.ml.sugerencias_loader import cargar_sugerencias
+from app.ml.semantico import cargar_buscador
 from app.core.database import crear_tablas, hay_base
 import logging
 import uuid
@@ -64,6 +65,7 @@ ROUTERS = (
     health.router, contenido.router, categorias.router, chat.router,
     modelo.router, biblioteca.router, sugerencias.router, busqueda.router,
     lote.router, metricas.router, correcciones.router, modelos_propios.router,
+    semantica.router,
 )
 
 for r in ROUTERS:
@@ -110,6 +112,9 @@ def iniciar_modelo():
     cargar_modelo()
     cargar_recomendador()
     cargar_sugerencias()
+    # La busqueda semantica es opcional: si falta el modelo o los vectores,
+    # devuelve None y el resto de la API arranca igual.
+    cargar_buscador()
 
 
 @app.exception_handler(Exception)

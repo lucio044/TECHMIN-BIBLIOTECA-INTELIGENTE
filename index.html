@@ -301,6 +301,7 @@
       <button class="tab active" data-view="clasificar" onclick="setView('clasificar')">✍️ Clasificar</button>
       <button class="tab" data-view="biblioteca" onclick="setView('biblioteca')">📚 Biblioteca <span class="n" id="tabCount">0</span></button>
       <button class="tab" data-view="panel" onclick="setView('panel')">🗂️ Mis temas</button>
+      <button class="tab" data-view="semantica" onclick="setView('semantica')">🔍 Buscar</button>
       <button class="tab" data-view="chat" onclick="setView('chat')">💬 Asistente</button>
       <button class="tab" data-view="propios" onclick="setView('propios')">🧪 Categorías propias</button>
       <button class="tab" data-view="modelo" onclick="setView('modelo')">📊 Dashboard</button>
@@ -367,6 +368,36 @@
       </div>
       <div class="filters" id="filters"></div>
       <div class="lib-grid" id="libGrid"></div>
+    </section>
+
+    <!-- ============ VISTA BUSQUEDA SEMANTICA ============ -->
+    <section id="v-semantica" hidden>
+      <div class="hero">
+        <h1>Buscá por <span class="gr">significado</span></h1>
+        <div class="sub">Describí lo que necesitás con tus palabras. Encuentra documentos que hablan de eso aunque no compartan ni un término con lo que escribiste — y aunque estén en otro idioma.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">🔍 Consulta en lenguaje corriente</div>
+        <div class="card-b">
+          <div class="chat-envio">
+            <input class="tin" id="semTexto" style="margin:0"
+              placeholder="Ej.: mi aplicación se cierra sola al girar el teléfono"
+              onkeydown="if(event.key==='Enter') buscarSemantica()">
+            <button class="btn" id="semBtn" onclick="buscarSemantica()">Buscar</button>
+          </div>
+          <div class="ejemplos">Probá con:
+            <div>
+              <span class="ej" onclick="semEjemplo('cómo protejo las contraseñas de mis usuarios')">contraseñas</span>
+              <span class="ej" onclick="semEjemplo('mi aplicación se cierra sola al girar la pantalla')">app que se cierra</span>
+              <span class="ej" onclick="semEjemplo('quiero guardar información de forma permanente y consultarla rápido')">guardar datos</span>
+              <span class="ej" onclick="semEjemplo('el servidor se cae cuando entran muchas personas a la vez')">servidor caído</span>
+              <span class="ej" onclick="semEjemplo('receta de sopa de tomate con albahaca')">algo ajeno al corpus</span>
+            </div>
+          </div>
+          <div id="semResultado" style="margin-top:16px"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ============ VISTA ASISTENTE ============ -->
@@ -653,7 +684,7 @@
   }
 
   /* ---------- vistas ---------- */
-  const VISTAS = ['clasificar','biblioteca','chat','propios','panel','modelo'];
+  const VISTAS = ['clasificar','biblioteca','semantica','chat','propios','panel','modelo'];
 
   /* Cada vista queda en el hash de la URL. Eso da tres cosas que antes no
      habia: el boton atras del navegador funciona, la pestaña sobrevive a un
@@ -860,6 +891,60 @@
     if(!j.categoria) return null;
     const resto = (j.ranking_categorias||[]).map(o=>({cat:o.categoria, p:o.probabilidad}));
     return [{cat:j.categoria, p:j.probabilidad}, ...resto];
+  }
+
+  /* ---------- busqueda semantica ----------
+     Distinta de explorar por termino: alli entra una palabra y salen los
+     documentos que la contienen. Aca entra una frase en lenguaje corriente
+     y salen los que hablan de lo mismo, aunque no compartan ninguna palabra
+     y aunque esten en otro idioma. */
+  function semEjemplo(t){
+    document.getElementById('semTexto').value = t;
+    buscarSemantica();
+  }
+
+  async function buscarSemantica(){
+    const caja = document.getElementById('semResultado');
+    const btn = document.getElementById('semBtn');
+    const consulta = document.getElementById('semTexto').value.trim();
+    if(consulta.length < 3) return;
+
+    btn.disabled = true;
+    caja.innerHTML = '<div class="spinner"></div>';
+    try{
+      const r = await fetch(`${API}/semantica?consulta=${encodeURIComponent(consulta)}&cantidad=6`);
+      const j = await r.json();
+      if(r.status === 503){
+        caja.innerHTML = `<div class="err">La búsqueda semántica no está disponible en este despliegue
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(j.detail||"")}</div></div>`;
+        return;
+      }
+      if(!r.ok) throw new Error(j.detail || "error");
+
+      if(!j.resultados.length){
+        caja.innerHTML = `<div class="rel"><div class="rt">Nada del histórico se parece a eso</div>
+          <div class="rx">Ningún documento superó el umbral de parecido. Con una consulta
+          ajena al contenido técnico, eso es la respuesta correcta.</div></div>
+          <div class="rel-nota">Comparado contra ${(j.documentos_comparados||0).toLocaleString('es')} documentos</div>`;
+        return;
+      }
+
+      caja.innerHTML = j.resultados.map(d=>`
+        <div class="rel">
+          <div class="rel-h">
+            <div class="rt">${esc(d.titulo)}</div>
+            <span class="sim" title="parecido de significado, coseno de -1 a 1">${d.parecido.toFixed(2)}</span>
+          </div>
+          ${d.extracto ? `<div class="rx">${esc(d.extracto)}</div>` : ""}
+          <div class="rc"><span class="rdot" style="background:${(COLORES[d.categoria]||["#6d5efc"])[0]}"></span>${esc(d.categoria)}</div>
+        </div>`).join("") +
+        `<div class="rel-nota">${j.total} de ${(j.documentos_comparados||0).toLocaleString('es')} documentos superaron el umbral</div>`;
+    }catch(e){
+      caja.innerHTML = `<div class="err">No se pudo buscar
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(e.message)}</div></div>`;
+    }finally{
+      btn.disabled = false;
+    }
   }
 
   /* ---------- asistente ----------
