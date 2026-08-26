@@ -21,9 +21,6 @@ class Settings(BaseSettings):
     modelo_url: str | None = None
     deepseek_api_key: str | None = None
 
-    jwt_secret_key: str | None = None
-    jwt_algorithm: str = "HS256"
-    jwt_minutos_expiracion: int = 60
     
     matriz_historica_url: str | None = None
     sugerencias_botones_url: str | None = None

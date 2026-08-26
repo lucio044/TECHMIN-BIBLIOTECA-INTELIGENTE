@@ -65,7 +65,7 @@ _buscador = None
 
 
 class BuscadorSemantico:
-    def __init__(self, vectores: np.ndarray, codificador, titulos, extractos, categorias, ids):
+    def __init__(self, vectores: np.ndarray, codificador, ids, titulos, extractos, categorias):
         # Los vectores se guardan en float16 para ocupar la mitad, y se
         # suben a float32 al cargarlos: el producto punto en float16 pierde
         # precision de forma visible cuando se suman 384 terminos.
@@ -143,10 +143,7 @@ def cargar_buscador():
             return None
 
     try:
-        import sys
-        sys.path.insert(0, str(RAIZ / "semantica"))
-        from codificador import Codificador
-
+        from app.ml.codificador import Codificador
         from app.ml.recomendador import cargar_recomendador
         reco = cargar_recomendador()
         if reco is None:
@@ -161,10 +158,7 @@ def cargar_buscador():
             return None
 
         codificador = Codificador(str(RUTA_MODELO), str(RUTA_TOKENIZADOR), hebras=1)
-        _buscador = BuscadorSemantico(
-            vectores, codificador,
-            reco._titulos, reco._extractos, reco._categorias, reco._ids,
-        )
+        _buscador = BuscadorSemantico(vectores, codificador, **reco.metadatos)
         logger.info("Busqueda semantica lista: %s documentos", _buscador.total_documentos)
         return _buscador
     except Exception as e:

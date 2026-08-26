@@ -127,6 +127,22 @@ class RecomendadorContenido:
         return self._vectorizador.transform([termino.strip()]).nnz > 0
 
     @property
+    def metadatos(self):
+        """Los datos de cada documento, para quien necesite acompanarlos.
+
+        La busqueda semantica ordena los mismos documentos por otro
+        criterio, asi que necesita estos campos. Se exponen aca en vez de
+        que los lea de los atributos privados: si manana cambia como se
+        guardan, se cambia en un solo lugar.
+        """
+        return {
+            "ids": self._ids,
+            "titulos": self._titulos,
+            "extractos": self._extractos,
+            "categorias": self._categorias,
+        }
+
+    @property
     def total_documentos(self) -> int:
         """Cuantos documentos hay indexados."""
         return int(self._matriz.shape[0])

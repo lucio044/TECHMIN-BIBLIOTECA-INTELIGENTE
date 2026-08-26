@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from datetime import datetime
 
+from app.core.acceso import identificar
 from app.core.dependencias import obtener_usuario_actual
 from app.schemas.contenido import ContenidoEntrada
 from app.schemas.biblioteca import BibliotecaEntrada, BibliotecaResultado
@@ -14,6 +15,7 @@ router = APIRouter()
 def guardar_contenido(
     entrada: BibliotecaEntrada,
     usuario_id: str = Depends(obtener_usuario_actual),
+    _=Depends(identificar),
 ):
     resultado_clasificacion = clasificar_contenido(
         ContenidoEntrada(titulo=entrada.titulo, texto=entrada.texto)
@@ -33,5 +35,8 @@ def guardar_contenido(
 
 
 @router.get("/biblioteca", response_model=list[BibliotecaResultado])
-def listar_biblioteca(usuario_id: str = Depends(obtener_usuario_actual)):
+def listar_biblioteca(
+    usuario_id: str = Depends(obtener_usuario_actual),
+    _=Depends(identificar),
+):
     return obtener_biblioteca(usuario_id)

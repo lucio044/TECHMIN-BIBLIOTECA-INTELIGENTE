@@ -1,12 +1,13 @@
-from fastapi import APIRouter
+from fastapi import Depends, APIRouter
 
+from app.core.acceso import identificar
 from app.services.metricas import obtener_metricas
 
 router = APIRouter()
 
 
 @router.get("/metricas")
-def metricas():
+def metricas(_=Depends(identificar)):
     """Metricas del modelo y del corpus, para el tablero.
 
     Casi todo se calcula de los artefactos cargados. El rendimiento por

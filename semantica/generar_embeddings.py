@@ -62,8 +62,11 @@ def main() -> int:
                 print("Descargarlo con: python semantica/descargar_modelo.py")
             return 1
 
-    sys.path.insert(0, str(AQUI))
-    from codificador import Codificador
+    # Un script si puede ajustar la ruta de importacion; una libreria no.
+    # El codificador vive con la aplicacion porque la API lo necesita en
+    # cada consulta, y este script lo reutiliza en vez de duplicarlo.
+    sys.path.insert(0, str(RAIZ / "backend"))
+    from app.ml.codificador import Codificador
 
     paquete = joblib.load(MATRIZ)
     titulos, extractos = paquete["titulos"], paquete["extractos"]

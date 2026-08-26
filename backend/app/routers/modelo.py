@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException
 from datetime import datetime
 
+from app.core.acceso import identificar
 from app.ml.loader import cargar_modelo, RUTA_MODELO
 from app.schemas.modelo import ModeloInfo
 
@@ -8,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/modelo/info", response_model=ModeloInfo)
-def obtener_info_modelo():
+def obtener_info_modelo(_=Depends(identificar)):
     modelo = cargar_modelo()
     if modelo is None:
         raise HTTPException(status_code=503, detail="El modelo no está disponible")
