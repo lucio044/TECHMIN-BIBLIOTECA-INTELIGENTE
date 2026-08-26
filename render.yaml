@@ -26,15 +26,15 @@ services:
       - key: PYTHON_VERSION
         value: "3.12.7"
       - key: MODELO_URL
-        value: https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE/raw/main/modelos/modelo_techmind_v2.joblib
+        value: https://github.com/lucio044/TECHMIND-BIBLIOTECA-INTELIGENTE/raw/main/modelos/modelo_techmind_v2.joblib
       - key: MATRIZ_HISTORICA_URL
-        value: https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE/raw/main/modelos/matriz_historica.pkl
+        value: https://github.com/lucio044/TECHMIND-BIBLIOTECA-INTELIGENTE/raw/main/modelos/matriz_historica.pkl
       # La cadena de conexion de Neon. Sin ella el servicio arranca igual,
       # pero las correcciones y los modelos propios se pierden al reiniciar.
       - key: DATABASE_URL
         sync: false
       - key: SUGERENCIAS_BOTONES_URL
-        value: https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE/raw/main/modelos/sugerencias_botones.json
+        value: https://github.com/lucio044/TECHMIND-BIBLIOTECA-INTELIGENTE/raw/main/modelos/sugerencias_botones.json
 
     # Render consulta esta ruta para saber si el servicio esta sano, y es
     # tambien la que conviene usar para el ping que lo mantiene despierto.

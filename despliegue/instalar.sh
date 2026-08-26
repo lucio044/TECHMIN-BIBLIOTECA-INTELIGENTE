@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-REPO="https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE.git"
+REPO="https://github.com/lucio044/TECHMIND-BIBLIOTECA-INTELIGENTE.git"
 DESTINO="/opt/techmind"
 # id -un es el ultimo recurso porque siempre responde. SUDO_USER y USER
 # pueden no estar definidas --al ejecutar por tuberia, por ejemplo-- y con

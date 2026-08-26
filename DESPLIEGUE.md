@@ -5,7 +5,7 @@ Dos servicios, los dos gratuitos y sin tarjeta:
 | | Dónde | Queda en |
 |---|---|---|
 | La API | Render | `https://techmind-api-24gg.onrender.com` |
-| La página | GitHub Pages | `https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/` |
+| La página | GitHub Pages | `https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/` |
 
 ---
 
@@ -77,7 +77,7 @@ Branch    main    /  (root)
 Guardar. En un par de minutos queda en:
 
 ```
-https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/
+https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/
 ```
 
 La página elige sola a qué API hablarle: desde GitHub Pages usa la de

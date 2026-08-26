@@ -17,7 +17,7 @@ catalogarlo a mano.
 
 | | |
 |---|---|
-| **La aplicación** | https://lucio044.github.io/TECHMIN-BIBLIOTECA-INTELIGENTE/ |
+| **La aplicación** | https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/ |
 | **La API — documentación interactiva** | https://techmind-api-24gg.onrender.com/docs |
 
 En Swagger podés clasificar cualquier texto sin instalar nada: abrí
@@ -33,8 +33,8 @@ En Swagger podés clasificar cualquier texto sin instalar nada: abrí
 ## Levantarla
 
 ```bash
-git clone https://github.com/lucio044/TECHMIN-BIBLIOTECA-INTELIGENTE.git
-cd TECHMIN-BIBLIOTECA-INTELIGENTE
+git clone https://github.com/lucio044/TECHMIND-BIBLIOTECA-INTELIGENTE.git
+cd TECHMIND-BIBLIOTECA-INTELIGENTE
 
 python preparar.py                    # coloca los artefactos donde van
 cd backend
