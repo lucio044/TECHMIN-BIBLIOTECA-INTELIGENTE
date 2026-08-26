@@ -2,10 +2,14 @@
 #
 # Instala TechMind en una instancia Ubuntu de AWS, con HTTPS.
 #
-# Se ejecuta una sola vez, sobre una instancia recien creada:
+# Se ejecuta una sola vez, sobre una instancia recien creada, pasandole la
+# IP ESTATICA ya asignada:
 #
-#     curl -fsSL <url-de-este-archivo> -o instalar.sh
-#     bash instalar.sh
+#     curl -fsSL <url-de-este-archivo> | bash -s 12.34.56.78
+#
+# Se recomienda esa forma y no descargar primero: en la terminal web de
+# Lightsail, dos lineas pegadas se juntan en una y los argumentos terminan
+# donde no van.
 #
 # Al terminar imprime la URL publica de la API.
 
@@ -158,6 +162,6 @@ echo
 echo "Falta:"
 echo "  1. Pegar la cadena de Neon:  sudo nano /etc/techmind.env"
 echo "     y despues:                sudo systemctl restart techmind"
-echo "  2. Apuntar el front a esta URL (linea 326 de index.html)."
+echo "  2. Apuntar el front a esta URL: la constante BASE en index.html."
 echo
 echo "Registro en vivo:   sudo journalctl -u techmind -f"
