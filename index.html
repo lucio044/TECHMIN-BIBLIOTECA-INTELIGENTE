@@ -198,6 +198,16 @@
   .chat-meta{ font-size:11px; color:#5c6885; margin-top:8px; }
   .chat-vacio{ color:#5c6885; font-size:13px; text-align:center; padding:26px 10px; line-height:1.6; }
 
+  /* respuesta armada con fragmentos del historico */
+  .cita{ border-left:2px solid var(--grad2); padding:2px 0 2px 12px; margin-top:10px; }
+  .cita .frag{ font-size:13px; line-height:1.62; color:var(--txt2); margin-bottom:9px; }
+  .cita .frag:last-child{ margin-bottom:0; }
+  .cita .frag .np{ font-family:var(--mono); font-size:10.5px; color:var(--muted);
+                   margin-right:7px; }
+  .cita-pie{ font-size:11.5px; color:var(--muted); margin-top:10px;
+             display:flex; flex-wrap:wrap; gap:5px 10px; align-items:baseline; }
+  .cita-pie b{ color:#7ee0c8; font-weight:600; }
+
   /* cuenta */
   .perfil{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--txt2);
            background:rgba(255,255,255,.04); border:1px solid var(--cardline);
@@ -404,7 +414,7 @@
     <section id="v-chat" hidden>
       <div class="hero">
         <h1>Preguntale al <span class="gr">modelo</span></h1>
-        <div class="sub">Explica cada clasificación con la evidencia que la sostiene: qué términos la empujaron, cuánto pesó cada uno y qué hay parecido en el histórico.</div>
+        <div class="sub">Preguntá algo y responde con lo que dicen los 38.257 documentos del histórico, citando de dónde lo saca. Si el corpus no lo cubre, lo dice — y si le pasás un contenido, explica cómo lo clasifica y qué términos pesaron.</div>
       </div>
 
       <div class="card">
@@ -413,15 +423,16 @@
           <div id="chatHilo" class="chat-hilo"></div>
           <div class="chat-envio">
             <textarea class="tin" id="chatTexto" rows="2"
-              placeholder="Pegá un contenido técnico y preguntá por qué se clasifica así…"></textarea>
+              placeholder="¿Qué es una base de datos relacional?"></textarea>
             <button class="btn" id="chatBtn" onclick="enviarChat()">Enviar</button>
           </div>
           <div class="ejemplos">Probá con:
             <div>
-              <span class="ej" onclick="chatEjemplo('Construcción de interfaces declarativas con Kotlin y Jetpack Compose, manejo del estado y ciclo de vida')">Jetpack Compose</span>
-              <span class="ej" onclick="chatEjemplo('cómo configuro un clúster de kubernetes con ingress y certificados TLS')">Kubernetes</span>
-              <span class="ej" onclick="chatEjemplo('optimizar consultas con índices y joins en PostgreSQL sobre tablas grandes')">PostgreSQL</span>
-              <span class="ej" onclick="chatEjemplo('receta de sopa de tomate con albahaca')">Algo ajeno al corpus</span>
+              <span class="ej" onclick="chatEjemplo('¿Qué es una base de datos relacional?')">¿Qué es una base de datos relacional?</span>
+              <span class="ej" onclick="chatEjemplo('¿Cómo se protege una aplicación de ataques?')">¿Cómo se protege de ataques?</span>
+              <span class="ej" onclick="chatEjemplo('¿Qué es cross site scripting?')">¿Qué es XSS?</span>
+              <span class="ej" onclick="chatEjemplo('optimizar consultas con índices y joins en PostgreSQL sobre tablas grandes')">Un contenido para clasificar</span>
+              <span class="ej" onclick="chatEjemplo('receta de sopa de tomate con albahaca')">Algo que no está en el corpus</span>
             </div>
           </div>
         </div>
@@ -981,6 +992,16 @@
     hilo.innerHTML = CHAT.map(m=>{
       if(m.rol === "user") return `<div class="burbuja mia">${esc(m.contenido)}</div>`;
 
+      // Cuando el historico responde, eso es lo que se muestra: la
+      // pregunta era una pregunta, no un texto para clasificar.
+      const h = m.historico;
+      const cita = h ? `<div class="cita">${
+        h.fragmentos.map(f=>`<div class="frag">${f.parte ? `<span class="np">[${f.parte}]</span>` : ""}${esc(f.texto)}</div>`).join("")
+      }</div><div class="cita-pie"><span>fuente: <b>${esc(h.fuente)}</b></span>
+        <span>${esc(h.categoria)}</span>
+        <span>parecido ${h.parecido.toFixed(2)}</span>
+        <span>entre ${(h.documentos_consultados||0).toLocaleString('es')} documentos</span></div>` : "";
+
       const pesos = (m.terminos||[]).map(t=>
         `<span class="peso">${esc(t.termino)} <b>${t.aporte>=0?"+":""}${t.aporte.toFixed(2)}</b></span>`).join("");
       const meta = m.categoria
@@ -990,8 +1011,10 @@
       // Solo se interpretan los **negritas** que pone la explicacion; el
       // resto del texto va escapado.
       const cuerpo = esc(m.contenido).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-      return `<div class="burbuja suya">${cuerpo}
-        ${pesos ? `<div class="pesos">${pesos}</div>` : ""}${meta}</div>`;
+      // Con respuesta del historico no se muestran los terminos: explican
+      // una clasificacion que ya no es lo que se pregunto.
+      return `<div class="burbuja suya">${h ? "" : cuerpo}${cita}
+        ${(!h && pesos) ? `<div class="pesos">${pesos}</div>` : ""}${h ? "" : meta}</div>`;
     }).join("");
     hilo.scrollTop = hilo.scrollHeight;
   }
@@ -1028,7 +1051,8 @@
       const j = await r.json();
       if(!r.ok) throw new Error(j.detail || "no se pudo responder");
       CHAT.push({rol:"assistant", contenido:j.respuesta, categoria:j.categoria,
-                 probabilidad:j.probabilidad, terminos:j.terminos_decisivos, fuente:j.fuente});
+                 probabilidad:j.probabilidad, terminos:j.terminos_decisivos, fuente:j.fuente,
+                 historico:j.del_historico});
     }catch(e){
       CHAT.push({rol:"assistant", contenido:`No se pudo consultar la API: ${e.message}`});
     }finally{

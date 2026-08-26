@@ -22,7 +22,7 @@ from openai import OpenAI
 
 from app.core.config import settings
 from app.schemas.contenido import ContenidoEntrada
-from app.services import explicacion
+from app.services import explicacion, sintetizador
 from app.services.clasificador import clasificar_contenido
 
 logger = logging.getLogger(__name__)
@@ -70,14 +70,21 @@ def responder_chat(texto_usuario: str, historial: list) -> dict:
     # insumo del prompt en el otro.
     _, _, terminos = explicacion.terminos_decisivos(texto_usuario)
 
+    # Antes que nada, ¿el historico dice algo sobre esto? Si lo dice, eso es
+    # una respuesta; la clasificacion sola no lo es.
+    del_historico = sintetizador.responder(texto_usuario)
+
     base = {
         "categoria": resultado.categoria,
         "probabilidad": resultado.probabilidad,
         "terminos_decisivos": terminos,
+        "del_historico": del_historico,
     }
 
     if not hay_proveedor():
-        return {**base, "respuesta": explicacion.redactar(texto_usuario, resultado), "fuente": "modelo"}
+        return {**base,
+                "respuesta": explicacion.redactar(texto_usuario, resultado, del_historico),
+                "fuente": "modelo"}
 
     mensajes = [{"role": m.rol, "content": m.contenido} for m in historial]
     mensajes.append({"role": "user", "content": construir_prompt(texto_usuario, resultado, terminos)})
@@ -92,4 +99,6 @@ def responder_chat(texto_usuario: str, historial: list) -> dict:
         # Se degrada al modo modelo, que responde igual de bien. El usuario
         # no tiene por que enterarse de que un proveedor externo fallo.
         logger.warning("DeepSeek no respondio, se explica con el modelo: %s", e)
-        return {**base, "respuesta": explicacion.redactar(texto_usuario, resultado), "fuente": "modelo"}
+        return {**base,
+                "respuesta": explicacion.redactar(texto_usuario, resultado, del_historico),
+                "fuente": "modelo"}

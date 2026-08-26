@@ -90,9 +90,15 @@ def test_no_quedan_modulos_sin_usar():
     for m in re.finditer(r"from app\.routers import \(([^)]+)\)", texto_main):
         for nombre in m.group(1).replace("\n", " ").split(","):
             importado.add("routers/" + nombre.strip())
+    # Dos formas que hay que contemplar, o el detector inventa huerfanos:
+    #   from app.services import explicacion, sintetizador   -> varios nombres
+    #   from app.services import correcciones as servicio    -> con alias
     for texto in modulos.values():
-        for m in re.finditer(r"from app\.(\w+) import (\w+)", texto):
-            importado.add(f"{m.group(1)}/{m.group(2)}")
+        for m in re.finditer(r"from app\.(\w+) import ([\w, ]+)", texto):
+            for nombre in m.group(2).split(","):
+                nombre = nombre.strip().split(" as ")[0].strip()
+                if nombre:
+                    importado.add(f"{m.group(1)}/{nombre}")
 
     huerfanos = [n for n in modulos if n != "main" and n not in importado]
     assert not huerfanos, f"modulos que nadie importa: {huerfanos}"

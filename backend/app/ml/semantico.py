@@ -46,6 +46,11 @@ UMBRAL = 0.48
 
 RAIZ = Path(__file__).resolve().parents[3]
 RUTA_VECTORES = RAIZ / "modelos" / "embeddings.npy"
+# El texto de cada documento, recortado a 800 caracteres. Lo usa el
+# sintetizador de respuestas; sin el, solo se dispone del extracto de
+# 199 caracteres de la matriz, que casi siempre queda cortado a mitad
+# de frase.
+RUTA_PASAJES = RAIZ / "modelos" / "pasajes.pkl"
 RUTA_MODELO = RAIZ / "semantica" / "modelo" / "modelo.onnx"
 RUTA_TOKENIZADOR = RAIZ / "semantica" / "modelo" / "tokenizer.json"
 
@@ -65,7 +70,8 @@ _buscador = None
 
 
 class BuscadorSemantico:
-    def __init__(self, vectores: np.ndarray, codificador, ids, titulos, extractos, categorias):
+    def __init__(self, vectores: np.ndarray, codificador, ids, titulos, extractos,
+                 categorias, pasajes=None):
         # Los vectores se guardan en float16 para ocupar la mitad, y se
         # suben a float32 al cargarlos: el producto punto en float16 pierde
         # precision de forma visible cuando se suman 384 terminos.
@@ -75,6 +81,9 @@ class BuscadorSemantico:
         self._extractos = extractos
         self._categorias = categorias
         self._ids = ids
+        # Puede faltar: el buscador funciona igual y el sintetizador queda
+        # sin material, que es lo que corresponde.
+        self._pasajes = pasajes
 
     def buscar(self, consulta: str, top_n: int = 5, umbral: float = UMBRAL) -> List[dict]:
         if not consulta or not consulta.strip():
@@ -100,6 +109,34 @@ class BuscadorSemantico:
             for i in candidatos
             if parecidos[i] >= umbral
         ]
+
+    def candidatos(self, consulta: str, cuantos: int = 30):
+        """Los documentos mas parecidos, con su indice y su parecido.
+
+        Es lo que necesita el sintetizador, que despues agrupa por documento
+        de origen en vez de quedarse con los primeros sueltos.
+        """
+        if not consulta or not consulta.strip():
+            return []
+        vector = self._codificar([consulta])[0]
+        parecidos = self._vectores @ vector
+        cantidad = min(cuantos, parecidos.size)
+        indices = np.argpartition(parecidos, -cantidad)[-cantidad:]
+        indices = indices[np.argsort(parecidos[indices])[::-1]]
+        return [(int(i), float(parecidos[i])) for i in indices]
+
+    def documento(self, i: int) -> dict:
+        return {
+            "id": int(self._ids[i]),
+            "titulo": str(self._titulos[i]),
+            "categoria": str(self._categorias[i]),
+            "texto": str(self._pasajes[i]) if self._pasajes is not None else "",
+            "extracto": str(self._extractos[i]) if self._extractos is not None else "",
+        }
+
+    @property
+    def hay_pasajes(self) -> bool:
+        return self._pasajes is not None
 
     @property
     def total_documentos(self) -> int:
@@ -157,8 +194,22 @@ def cargar_buscador():
                          vectores.shape[0], reco.total_documentos)
             return None
 
+        pasajes = None
+        if RUTA_PASAJES.exists():
+            import joblib
+            pasajes = joblib.load(RUTA_PASAJES)
+            if len(pasajes) != reco.total_documentos:
+                logger.error("Los pasajes (%s) no coinciden con la matriz (%s): "
+                             "regenerarlos con semantica/generar_pasajes.py",
+                             len(pasajes), reco.total_documentos)
+                pasajes = None
+        else:
+            logger.warning("Sin pasajes.pkl: el sintetizador de respuestas no "
+                           "va a tener material. Ver semantica/generar_pasajes.py")
+
         codificador = Codificador(str(RUTA_MODELO), str(RUTA_TOKENIZADOR), hebras=1)
-        _buscador = BuscadorSemantico(vectores, codificador, **reco.metadatos)
+        _buscador = BuscadorSemantico(vectores, codificador, pasajes=pasajes,
+                                      **reco.metadatos)
         logger.info("Busqueda semantica lista: %s documentos", _buscador.total_documentos)
         return _buscador
     except Exception as e:

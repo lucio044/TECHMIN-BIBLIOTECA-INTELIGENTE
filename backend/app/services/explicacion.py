@@ -67,13 +67,25 @@ def terminos_decisivos(texto: str, cuantos: int = 6) -> Tuple[str, float, List[d
     nombres = vectorizador.get_feature_names_out()
 
     ordenados = sorted(zip(aportes.col, aportes.data), key=lambda par: -par[1])
-    utiles = [
-        {"termino": str(nombres[col]), "aporte": round(float(valor), 4)}
-        for col, valor in ordenados
-        if valor >= APORTE_MINIMO and _es_util(str(nombres[col]))
-    ]
+    utiles = []
+    for col, valor in ordenados:
+        if valor < APORTE_MINIMO or not _es_util(str(nombres[col])):
+            continue
+        utiles.append({
+            "termino": str(nombres[col]),
+            "aporte": round(float(valor), 4),
+            # Un termino solo sostiene la decision si la categoria ganadora
+            # es tambien la que mas peso le da a el. «backend», por ejemplo,
+            # pesa +1,38 en Seguridad y +1,17 en Frontend: aparece en las
+            # dos por igual, asi que no inclina nada aunque su aporte sea
+            # alto. Presentarlo como el motivo es lo que hace que una
+            # respuesta se lea como un disparate.
+            "sostiene": bool(int(clasificador.coef_[:, col].argmax()) == ganadora),
+        })
+        if len(utiles) >= cuantos:
+            break
 
-    return str(clasificador.classes_[ganadora]), float(probabilidades[ganadora]), utiles[:cuantos]
+    return str(clasificador.classes_[ganadora]), float(probabilidades[ganadora]), utiles
 
 
 def _enumerar(cosas: List[str]) -> str:
@@ -82,13 +94,34 @@ def _enumerar(cosas: List[str]) -> str:
     return ", ".join(cosas[:-1]) + " y " + cosas[-1]
 
 
-def redactar(texto: str, resultado) -> str:
+def redactar(texto: str, resultado, del_historico=None) -> str:
     """Arma una explicacion en prosa a partir de lo que el modelo calculo.
 
     No hay ningun proveedor externo detras: todo lo que dice sale del
     modelo, del ranking y del historico. Por eso nunca falla y nunca puede
     inventar nada que el sistema no sepa.
+
+    Cuando el historico tiene material sobre la pregunta, eso pasa primero:
+    quien pregunta «que es una base de datos relacional» quiere la
+    respuesta, no en que categoria cae su pregunta.
     """
+    if del_historico:
+        partes = len(del_historico["fragmentos"])
+        cabeza = (
+            f"Segun **{del_historico['fuente']}**, del historico"
+            f"{' (' + str(partes) + ' fragmentos)' if partes > 1 else ''}:"
+        )
+        cuerpo = " ".join(f["texto"] for f in del_historico["fragmentos"])
+        # Se recorta para la prosa; los fragmentos completos viajan aparte
+        # en la respuesta, para que el cliente los muestre enteros.
+        if len(cuerpo) > 900:
+            cuerpo = cuerpo[:900].rsplit(" ", 1)[0] + "…"
+        cola = (
+            f" Se compararon {del_historico['documentos_consultados']:,} documentos "
+            f"y este fue el mas cercano ({del_historico['parecido']:.2f})."
+        ).replace(",", ".")
+        return f"{cabeza} {cuerpo}{cola}"
+
     _, _, terminos = terminos_decisivos(texto)
 
     categoria = resultado.categoria
@@ -101,14 +134,35 @@ def redactar(texto: str, resultado) -> str:
     else:
         arranque = (
             f"Lo mas parecido es **{categoria}**, pero con {confianza:.0%} de confianza "
-            f"la decision esta lejos de ser firme."
+            f"esto no alcanza para clasificar nada: hace falta mas texto."
         )
 
     partes = [arranque]
 
-    if terminos:
-        listado = _enumerar([f"«{t['termino']}»" for t in terminos[:4]])
+    sostienen = [t for t in terminos if t["sostiene"]]
+    ambiguos = [t for t in terminos if not t["sostiene"]]
+
+    if sostienen:
+        listado = _enumerar([f"«{t['termino']}»" for t in sostienen[:4]])
         partes.append(f"Lo que mas peso fue {listado}.")
+    elif ambiguos:
+        # Hay terminos con peso, pero ninguno apunta a la categoria que
+        # gano: son palabras que el corpus reparte entre varias. Decir «lo
+        # que mas peso fue X» cuando X pesa mas en otra categoria es lo que
+        # convierte la respuesta en un disparate aparente.
+        pocos = ambiguos[:3]
+        listado = _enumerar([f"«{t['termino']}»" for t in pocos])
+        if len(pocos) > 1:
+            partes.append(f"Ningun termino sostiene esa categoria: {listado} "
+                          f"aparecen repartidos entre varias, asi que no inclinan la decision.")
+        else:
+            partes.append(f"Ningun termino sostiene esa categoria: {listado} "
+                          f"aparece repartido entre varias, asi que no inclina la decision.")
+    else:
+        partes.append(
+            "No hay en el texto ningun termino con peso suficiente para "
+            "decidir; el modelo esta eligiendo casi a ciegas."
+        )
 
     otras = getattr(resultado, "ranking_categorias", None) or []
     if otras:

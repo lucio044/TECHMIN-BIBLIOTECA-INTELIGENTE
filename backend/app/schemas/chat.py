@@ -21,6 +21,27 @@ class TerminoDecisivo(BaseModel):
     )
 
 
+class Fragmento(BaseModel):
+    parte: int
+    texto: str
+    parecido: float
+
+
+class RespuestaDelHistorico(BaseModel):
+    """Lo que dice el corpus sobre la pregunta, sin redactar nada.
+
+    Cada fragmento es texto literal de un documento que existe: se puede ir
+    a la fuente y comprobarlo linea por linea.
+    """
+
+    fuente: str
+    categoria: str
+    parecido: float
+    fragmentos: list[Fragmento]
+    otras_fuentes: list[str] = []
+    documentos_consultados: int
+
+
 class ChatSalida(BaseModel):
     respuesta: str
 
@@ -30,3 +51,7 @@ class ChatSalida(BaseModel):
     probabilidad: float | None = None
     terminos_decisivos: list[TerminoDecisivo] = []
     fuente: Literal["modelo", "deepseek"] = "modelo"
+
+    # Presente cuando el historico tiene material sobre la pregunta. Es lo
+    # que convierte al asistente en algo que responde y no solo clasifica.
+    del_historico: RespuestaDelHistorico | None = None
