@@ -77,13 +77,57 @@ def hay_base() -> bool:
     return SessionLocal is not None
 
 
-def crear_tablas() -> None:
-    """Crea las tablas que falten. Se llama al arrancar.
+# Columnas agregadas despues de que la tabla ya existiera en algun
+# despliegue. create_all() crea tablas que faltan pero no toca las que ya
+# estan, asi que estas hay que agregarlas a mano.
+#
+# Es un apaño deliberado para un cambio de una sola columna. Al segundo o
+# tercero conviene Alembic: esto no sabe deshacer nada ni en que orden
+# aplicarse.
+COLUMNAS_AGREGADAS = [
+    (
+        "modelos_propios",
+        "duenio",
+        "ALTER TABLE modelos_propios ADD COLUMN duenio VARCHAR(80) "
+        "NOT NULL DEFAULT 'anterior-a-la-propiedad'",
+        "CREATE INDEX IF NOT EXISTS ix_modelos_propios_duenio "
+        "ON modelos_propios (duenio)",
+    ),
+]
 
-    Con create_all alcanza mientras el esquema solo crezca. Para cambios que
-    modifiquen tablas existentes hace falta una herramienta de migraciones
-    tipo Alembic, y esa decision se toma cuando aparezca el primer cambio
-    incompatible, no antes.
+
+def _agregar_columnas_que_falten() -> None:
+    """Pone al dia las tablas que ya existian.
+
+    Los modelos entrenados antes de que hubiera dueño quedan con un valor
+    que no coincide con el de ningun cliente, asi que dejan de aparecer.
+    Es lo correcto: no se puede adivinar de quien era cada uno, y
+    asignarselos a cualquiera seria peor que perderlos de vista.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    for tabla, columna, alter, indice in COLUMNAS_AGREGADAS:
+        if tabla not in inspector.get_table_names():
+            continue
+        existentes = {c["name"] for c in inspector.get_columns(tabla)}
+        if columna in existentes:
+            continue
+        logger.warning("Agregando la columna %s.%s, que falta en esta base", tabla, columna)
+        with engine.begin() as conexion:
+            conexion.execute(text(alter))
+            if indice:
+                conexion.execute(text(indice))
+        logger.info("Columna %s.%s agregada", tabla, columna)
+
+
+def crear_tablas() -> None:
+    """Crea las tablas que falten y pone al dia las que ya estan.
+
+    create_all alcanza mientras el esquema solo crezca con tablas nuevas.
+    Cuando se agrega una columna a una tabla que ya existe no hace nada, y
+    la aplicacion revienta al primer insert: por eso ademas se revisan las
+    columnas de COLUMNAS_AGREGADAS.
     """
     if engine is None:
         return
@@ -91,6 +135,12 @@ def crear_tablas() -> None:
     from app.models import correccion, modelo_propio  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    try:
+        _agregar_columnas_que_falten()
+    except Exception as e:
+        # Que falle una migracion no puede impedir que el servicio arranque:
+        # lo demas sigue funcionando y el error queda en el registro.
+        logger.error("No se pudieron agregar las columnas que faltan: %s", e)
     logger.info("Tablas verificadas")
 
 
