@@ -191,6 +191,47 @@ Responde `422` con el detalle del campo que falla, no un error interno.
 
 ---
 
+### 6 · Buscar por significado
+
+Es distinto del ejemplo 2. Allí entra un término y salen los documentos que
+lo contienen; acá entra una frase en lenguaje corriente y salen los que
+hablan de lo mismo, **aunque no compartan ninguna palabra y aunque estén en
+otro idioma**.
+
+```bash
+curl -G https://15-229-103-244.sslip.io/v1/semantica   --data-urlencode "consulta=cómo protejo las contraseñas de mis usuarios"   --data-urlencode "cantidad=3"
+```
+
+```json
+{
+  "consulta": "cómo protejo las contraseñas de mis usuarios",
+  "total": 3,
+  "documentos_comparados": 38257,
+  "resultados": [
+    {
+      "titulo": "Contraseña Wikipedia parte 2",
+      "categoria": "Seguridad",
+      "parecido": 0.68,
+      "extracto": "..."
+    },
+    {
+      "titulo": "The Best Password Tips and Tricks",
+      "categoria": "Seguridad",
+      "parecido": 0.66,
+      "extracto": "..."
+    }
+  ]
+}
+```
+
+Esa misma consulta en `/buscar` devuelve **cero resultados**: ninguna de sus
+palabras aparece en el corpus, que está en inglés al 95,9 %.
+
+`parecido` es el coseno entre significados, de -1 a 1. Por debajo de 0,48 no
+se devuelve nada. El corte se buscó midiendo 12 consultas técnicas contra 10
+ajenas al corpus; las dos bandas se solapan, así que se prefiere no perder
+ninguna consulta legítima antes que rechazar toda la basura.
+
 ## Qué hay acá
 
 ```
@@ -232,11 +273,13 @@ Cada respuesta trae:
 |---|---|---|
 | `POST` | **`/contenido`** | Clasifica un contenido técnico |
 | `GET` | `/buscar` | Busca en el histórico por palabra clave |
+| `GET` | **`/semantica`** | Busca por significado, cruzando idiomas |
 | `GET` | `/metricas` | Rendimiento del modelo y composición del corpus |
 | `POST` `GET` | `/correcciones` | Reportar una clasificación equivocada |
 | `GET` | `/correcciones/resumen` | Dónde se equivoca más el modelo |
 | `POST` `GET` | `/modelos` | Entrenar un modelo con categorías propias |
 | `POST` | `/modelos/{id}/clasificar` | Clasificar con un modelo propio |
+| `DELETE` | `/modelos/{id}` | Descartar un modelo propio |
 | `POST` | `/lote` | Clasifica un CSV entero de una vez |
 | `GET` | `/sugerencias` | Términos de ejemplo para los botones |
 | `GET` | `/categorias` | Las 8 categorías |
@@ -360,6 +403,35 @@ Se eligió por F1 macro —y no por accuracy— para no premiar a un modelo que
 acierte solo en las categorías grandes. La coincidencia entre el test y la
 validación cruzada confirma que el resultado no depende de cómo cayó la
 división.
+
+### Búsqueda semántica
+
+El corpus está en inglés al 95,9 % y la interfaz en español. Quien escribe
+«cómo protejo las contraseñas» no tiene con qué emparejarse contra un
+documento que dice *password hashing*, así que la búsqueda por palabras
+devuelve vacío.
+
+Se resuelve con `paraphrase-multilingual-MiniLM-L12-v2`, que lleva los dos
+idiomas al mismo espacio. Se usa en ONNX cuantizado a uint8 —113 MB en vez
+de 470— y no vía `sentence-transformers`, porque esa librería arrastra torch:
+unos 800 MB instalados que no entran junto al resto en 2 GB de memoria.
+
+| | |
+|---|---|
+| Documentos vectorizados | 38.257 |
+| Dimensiones | 384 |
+| Tamaño del archivo | 29 MB en `float16` |
+| Codificar una consulta | ~6 ms |
+
+Se regeneran con `python semantica/generar_embeddings.py` cada vez que
+cambie la matriz histórica. El servicio comprueba al arrancar que los
+vectores correspondan a la matriz y se niega a usar unos que no coincidan,
+en lugar de devolver resultados equivocados.
+
+Se probó antes la vía barata —LSA sobre la matriz TF-IDF que ya existía, sin
+dependencias nuevas— y no sirve acá: su dimensión dominante separa idiomas,
+no temas. Una consulta en español devolvía el 100 % de resultados en español
+cuando el corpus tiene 2,7 %.
 
 ### Contenido relacionado
 
