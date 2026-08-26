@@ -1,8 +1,0 @@
-Metadata-Version: 2.4
-Name: techmind-nlp
-Version: 1.0.0
-Summary: Procesamiento de texto de TechMind: limpieza, tokenización y extracción de términos
-Requires-Python: >=3.10
-Requires-Dist: numpy>=2.0.0
-Requires-Dist: scikit-learn>=1.8.0
-Requires-Dist: joblib>=1.3.0

@@ -28,3 +28,8 @@ venv/
 # El modelo de embeddings son 122 MB y no es nuestro: lo publica su autor
 # y el servicio lo descarga al arrancar. Ver semantica/descargar_modelo.py
 semantica/modelo/
+
+# Artefactos que deja pip al instalar el paquete de NLP en modo editable
+*.egg-info/
+build/
+dist/
