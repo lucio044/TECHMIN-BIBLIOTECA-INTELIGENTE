@@ -1,88 +1,104 @@
 # Poner el proyecto en línea
 
-Dos servicios, los dos gratuitos y sin tarjeta:
-
 | | Dónde | Queda en |
 |---|---|---|
-| La API | Render | `https://techmind-api-24gg.onrender.com` |
-| La página | GitHub Pages | `https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/` |
+| La API | AWS Lightsail, São Paulo | `https://15-229-103-244.sslip.io` |
+| La página | Vercel | `https://techmind-equipo46.vercel.app` |
+| La página (respaldo) | GitHub Pages | `https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/` |
+| La base | Neon (PostgreSQL) | correcciones y modelos entrenados |
+
+Los dos despliegues de la página salen del mismo repositorio y se
+actualizan solos en cada push, así que nunca quedan desincronizados.
 
 ---
 
-## 1 · La API en Render
+## 1 · La API en una instancia propia
 
-**Entrar** a [render.com](https://render.com) con la cuenta de GitHub.
+Todo el procedimiento está en [`despliegue/instalar.sh`](despliegue/instalar.sh),
+que se ejecuta una vez sobre una instancia Ubuntu recién creada:
 
-**New → Blueprint**, elegir este repositorio. Render lee `render.yaml` y arma
-el servicio solo: no hay que tocar nada del panel.
-
-> Los subdominios de Render son únicos en todo el mundo, y `techmind-api`
-> ya estaba tomado por otro proyecto. Render le agregó un sufijo y el
-> servicio quedó en **`techmind-api-24gg.onrender.com`**.
->
-> Esa es la URL que usa `index.html`. Si algún día se renombra el
-> servicio, hay que cambiarla ahí también.
-
-La primera construcción tarda unos minutos. Cuando termine, comprobar:
-
-```
-https://techmind-api-24gg.onrender.com/health    ->  {"status":"ok"}
-https://techmind-api-24gg.onrender.com/docs      ->  Swagger
+```bash
+curl -fsSL https://raw.githubusercontent.com/lucio044/TECHMIND-BIBLIOTECA-INTELIGENTE/main/despliegue/instalar.sh | bash -s <IP-ESTÁTICA>
 ```
 
-### El arranque en frío
+El script instala los paquetes, Caddy, el código, el entorno virtual, los
+artefactos, la unidad de systemd y el certificado. Tarda unos diez minutos,
+casi todo esperando a que `pip` baje scipy y scikit-learn.
 
-Medido contra el servicio real: **72 segundos** cuando estaba dormido, y
-**menos de un segundo** despierto.
+**La instancia:** Ubuntu 24.04, 2 GB de RAM. No alcanza con menos: la API
+ocupa unos 270 MB con el modelo y la matriz cargados, y la búsqueda
+semántica agrega otros 190 entre la sesión de ONNX y los vectores. Con dos
+workers son unos 920 MB.
 
-Los artefactos se copian durante la construcción, no al arrancar, así la
-descarga de 33 MB queda fuera del camino crítico. El resto del tiempo es
-Render levantando el contenedor, y eso no se puede acortar en el plan
-gratuito — por eso importa el ping del punto siguiente.
+**El puerto 80 tiene que estar abierto**, además del 443. Let's Encrypt
+valida por ahí antes de emitir el certificado.
+
+### El dominio
+
+Let's Encrypt no emite certificados para direcciones IP, y sin HTTPS la
+página —que está en Vercel, que es HTTPS— no puede llamar a la API: el
+navegador bloquea las llamadas a `http://` desde una página segura.
+
+Se resuelve con [sslip.io](https://sslip.io), que resuelve cualquier IP
+escrita en el nombre: `15.229.103.244` se vuelve `15-229-103-244.sslip.io`.
+Es gratis y no hay que registrar nada. Para un dominio propio se cambia una
+línea del `Caddyfile`.
+
+### La base de datos
+
+La cadena de Neon va en `/etc/techmind.env`, legible sólo por root, y nunca
+en el repositorio:
+
+```bash
+sudo nano /etc/techmind.env      # pegar en DATABASE_URL=
+sudo systemctl restart techmind
+```
+
+Sin ella el servicio arranca igual, pero las correcciones y los modelos
+entrenados se pierden en cada reinicio.
 
 ---
 
-## 2 · Mantenerlo despierto
+## 2 · Qué pasa si algo se cae
 
-El plan gratuito **apaga el servicio a los 15 minutos sin uso**. La visita
-siguiente espera **unos 72 segundos** mientras vuelve a arrancar — medido,
-no estimado.
+**El proceso.** La unidad de systemd tiene `Restart=always`, así que si el
+servicio muere vuelve solo a los 3 segundos. Y está habilitada con
+`systemctl enable`, así que también arranca sola si se reinicia la máquina.
 
-Se evita con un ping periódico:
+Para comprobarlo:
 
-**En [cron-job.org](https://cron-job.org)** — gratis, sin tarjeta:
-
-```
-URL       https://techmind-api-24gg.onrender.com/health
-Cada      10 minutos
+```bash
+systemctl is-enabled techmind     # enabled
+systemctl show techmind -p Restart  # Restart=always
 ```
 
-Diez minutos alcanza porque el corte es a los quince.
+**La API entera.** La página no se rompe: clasifica con un respaldo local en
+JavaScript y lo dice. Lo que sí deja de funcionar es todo lo que necesita el
+histórico —búsqueda, relacionados, asistente, modelos propios— y cada
+pestaña muestra un error explicando qué pasó, en lugar de fingir un
+resultado.
 
-> Render da **750 horas al mes** en el plan gratuito y mantenerlo despierto
-> todo el mes consume unas 720. Entra, pero sin margen para un segundo
-> servicio: si algún día agregás otro, el ping hay que espaciarlo o apagarlo.
+Eso es deliberado. No hay forma honesta de simular en el navegador una
+búsqueda sobre 38.257 documentos, así que la alternativa a decir «no se
+pudo» sería inventar.
+
+**Por qué no hay una segunda API de respaldo.** La hubo, en Render, y se
+apagó: su plan gratuito son 512 MB y la búsqueda semántica ya no entra ahí.
+Un respaldo que corre una versión distinta de la que se está usando es peor
+que no tener respaldo, porque nadie se entera de lo que falta hasta que lo
+necesita.
 
 ---
 
-## 3 · La página en GitHub Pages
+## 3 · La página
 
-En este repositorio: **Settings → Pages**
+**Vercel** — importar el repositorio. `vercel.json` tiene la configuración;
+no hay que compilar nada, es un archivo HTML.
 
-```
-Source    Deploy from a branch
-Branch    main    /  (root)
-```
+**GitHub Pages** — `Settings → Pages → Deploy from a branch → main / (root)`.
 
-Guardar. En un par de minutos queda en:
-
-```
-https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/
-```
-
-La página elige sola a qué API hablarle: desde GitHub Pages usa la de
-Render, y abierta en local usa `127.0.0.1:8000`. No hay que cambiar nada
-para desarrollar.
+La página elige sola a qué API hablarle: publicada usa la de AWS, abierta en
+local usa `127.0.0.1:8000`. No hay que cambiar nada para desarrollar.
 
 ---
 
@@ -90,18 +106,31 @@ para desarrollar.
 
 | | Esperado |
 |---|---|
-| `https://techmind-api-24gg.onrender.com/health` | `{"status":"ok"}` |
-| `https://techmind-api-24gg.onrender.com/docs` | Swagger carga |
-| La página en GitHub Pages | clasifica y muestra relacionados |
+| `https://15-229-103-244.sslip.io/v1/health` | `{"status":"ok"}` |
+| `https://15-229-103-244.sslip.io/docs` | Swagger carga |
+| La página | clasifica y muestra relacionados con su extracto |
+| La pestaña Buscar | «cómo protejo las contraseñas» devuelve documentos en inglés |
 
 Si la página carga pero al clasificar da error, es CORS: revisar que el
-origen esté en `backend/app/main.py`. Hoy están permitidos
-`https://lucio044.github.io`, `localhost` y cualquier `*.onrender.com`.
+origen esté en `backend/app/main.py`.
 
 ---
 
-## Si cambia el modelo
+## Actualizar
 
-Se reemplazan los archivos de `modelos/` en este repositorio y se reinicia
-el servicio en Render (**Manual Deploy → Restart**). No hace falta volver a
-construir: los artefactos se descargan al arrancar.
+```bash
+cd /opt/techmind
+git pull
+.venv/bin/pip install -q -r backend/requirements.txt   # sólo si cambiaron
+sudo systemctl restart techmind
+```
+
+Si cambió el modelo o la matriz, hay que regenerar los vectores de la
+búsqueda semántica, porque tienen que corresponderse fila a fila:
+
+```bash
+python semantica/generar_embeddings.py
+```
+
+El servicio lo comprueba al arrancar y se niega a usar unos vectores que no
+coincidan con la matriz, en lugar de devolver resultados equivocados.

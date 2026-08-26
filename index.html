@@ -523,8 +523,9 @@
   </div>
 
 <script>
-  // La API vive en Render. Al abrir el archivo desde el disco o desde
-  // localhost se usa la copia local, para poder desarrollar sin internet.
+  // La API vive en una instancia propia. Al abrir el archivo desde el
+  // disco o desde localhost se usa la copia local, para poder desarrollar
+  // sin internet.
   //
   // Se apunta a /v1 y no a las rutas sueltas: esas siguen respondiendo por
   // compatibilidad, pero vienen con la cabecera Deprecation. Si la API se
@@ -793,7 +794,7 @@
           `<div class="stat" style="grid-column:1/-1;text-align:center;color:#ff9b9b">
             No se pudieron cargar las métricas
             <div style="font-size:12px;color:var(--muted);margin-top:8px">
-              ${e.message} · Si la API estuvo dormida tarda hasta un minuto. Probá de nuevo.</div></div>`;
+              ${e.message} · Revisá que la API esté respondiendo.</div></div>`;
       });
   }
 
@@ -1352,13 +1353,10 @@
     scoreLocal("Introducción a Spring Boot creación de APIs REST con Java y Spring Boot controladores servicios").ranking
   );
 
-  /* Se pide todo esto al abrir la pagina, no al primer clic.
-     Dos motivos. Uno: de aca sale el total de documentos del historico, que
-     la tarjeta de relacionados necesita para decir contra cuantos comparo.
-     Dos, y mas importante: en el plan gratuito el servicio se duerme a los
-     15 minutos, y el primero que lo despierta espera hasta 70 segundos. Si
-     ese costo lo paga la carga de la pagina, para cuando alguien escriba
-     algo y presione Clasificar el servidor ya esta despierto. */
+  /* Se pide al abrir la pagina y no al primer clic. De aca sale el total
+     de documentos del historico, que la tarjeta de relacionados necesita
+     para decir contra cuantos comparo, y de paso deja el Dashboard listo
+     para abrirse sin espera. */
   (async function precalentar(){
     try{
       const r = await fetch(API + "/metricas");

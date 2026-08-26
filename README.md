@@ -18,7 +18,7 @@ catalogarlo a mano.
 | | |
 |---|---|
 | **La aplicación** | https://lucio044.github.io/TECHMIND-BIBLIOTECA-INTELIGENTE/ |
-| **La API — documentación interactiva** | https://techmind-api-24gg.onrender.com/docs |
+| **La API — documentación interactiva** | https://15-229-103-244.sslip.io/docs |
 
 En Swagger podés clasificar cualquier texto sin instalar nada: abrí
 `POST /contenido`, tocá *Try it out* y pegá tu contenido.
@@ -81,7 +81,7 @@ No hay que cambiar nada para desarrollar.
 ### 1 · Clasificar un contenido
 
 ```bash
-curl -X POST https://techmind-api-24gg.onrender.com/contenido   -H "Content-Type: application/json"   -d '{"titulo":"Despliegue con Docker","texto":"Contenedores, Kubernetes y pipelines de CI/CD en AWS con Terraform"}'
+curl -X POST https://15-229-103-244.sslip.io/contenido   -H "Content-Type: application/json"   -d '{"titulo":"Despliegue con Docker","texto":"Contenedores, Kubernetes y pipelines de CI/CD en AWS con Terraform"}'
 ```
 
 ```json
@@ -104,7 +104,7 @@ curl -X POST https://techmind-api-24gg.onrender.com/contenido   -H "Content-Type
 ### 2 · Buscar por palabra clave
 
 ```bash
-curl "https://techmind-api-24gg.onrender.com/buscar?termino=docker&cantidad=3"
+curl "https://15-229-103-244.sslip.io/buscar?termino=docker&cantidad=3"
 ```
 
 ```json
@@ -133,7 +133,7 @@ no el resultado menos malo.
 ### 3 · Clasificar un CSV entero
 
 ```bash
-curl -X POST https://techmind-api-24gg.onrender.com/lote   -F "archivo=@contenidos.csv"
+curl -X POST https://15-229-103-244.sslip.io/lote   -F "archivo=@contenidos.csv"
 ```
 
 El CSV necesita una columna de título y otra de texto. Se aceptan varios
@@ -169,7 +169,7 @@ Límite: **1.000 filas** y **5 MB** por archivo.
 ### 4 · Consultar las categorías
 
 ```bash
-curl https://techmind-api-24gg.onrender.com/categorias
+curl https://15-229-103-244.sslip.io/categorias
 ```
 
 ```json
@@ -182,7 +182,7 @@ curl https://techmind-api-24gg.onrender.com/categorias
 ### 5 · Entrada inválida
 
 ```bash
-curl -X POST https://techmind-api-24gg.onrender.com/contenido   -H "Content-Type: application/json"   -d '{"titulo":"   ","texto":"algo"}'
+curl -X POST https://15-229-103-244.sslip.io/contenido   -H "Content-Type: application/json"   -d '{"titulo":"   ","texto":"algo"}'
 ```
 
 Responde `422` con el detalle del campo que falla, no un error interno.
@@ -211,7 +211,7 @@ Se puede usar **sin credenciales**, con un límite de **30 peticiones por
 minuto**. Con una clave en `X-API-Key` el límite sube a **600**:
 
 ```bash
-curl -H "X-API-Key: tu-clave" https://techmind-api-24gg.onrender.com/v1/categorias
+curl -H "X-API-Key: tu-clave" https://15-229-103-244.sslip.io/v1/categorias
 ```
 
 Las claves se definen en la variable `TECHMIND_API_KEYS`, separadas por
@@ -281,7 +281,7 @@ una clínica necesita *Cardiología, Pediatría*.
 modelo suyo en segundos:
 
 ```bash
-curl -X POST https://techmind-api-24gg.onrender.com/v1/modelos   -F "archivo=@mis_documentos.csv" -F "nombre=Estudio jurídico"
+curl -X POST https://15-229-103-244.sslip.io/v1/modelos   -F "archivo=@mis_documentos.csv" -F "nombre=Estudio jurídico"
 ```
 
 ```json
