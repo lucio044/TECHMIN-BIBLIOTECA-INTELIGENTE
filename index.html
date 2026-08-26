@@ -941,7 +941,12 @@
     const caja = document.getElementById('semResultado');
     const btn = document.getElementById('semBtn');
     const consulta = document.getElementById('semTexto').value.trim();
-    if(consulta.length < 3) return;
+    // Tres caracteres es lo que exige el servidor. Se avisa en vez de
+    // volver sin hacer nada, que se lee como un boton que no funciona.
+    if(consulta.length < 3){
+      caja.innerHTML = '<div class="err">Escribí algo un poco más largo para buscar.</div>';
+      return;
+    }
 
     btn.disabled = true;
     caja.innerHTML = '<div class="spinner"></div>';
@@ -1048,7 +1053,19 @@
     const caja = document.getElementById('chatTexto');
     const btn = document.getElementById('chatBtn');
     const texto = caja.value.trim();
-    if(texto.length < 15) return;
+
+    /* Antes exigia 15 caracteres y volvia sin hacer nada. Ese minimo tenia
+       sentido para clasificar un contenido, no para preguntar: «¿Qué es
+       XSS?» son 12 y «que es SQL» son 10. El boton parecia roto porque no
+       pasaba absolutamente nada al tocarlo, ni un aviso.
+       Ahora el minimo es el que necesita el servidor, y si no se cumple se
+       dice. */
+    if(texto.length < 3){
+      document.getElementById('chatHilo').insertAdjacentHTML('beforeend',
+        '<div class="burbuja suya">Escribí una pregunta un poco más larga.</div>');
+      document.getElementById('chatHilo').scrollTop = 1e9;
+      return;
+    }
 
     CHAT.push({rol:"user", contenido:texto});
     caja.value = "";
