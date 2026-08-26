@@ -36,3 +36,10 @@ psycopg[binary]==3.2.3
 # que no entran junto al resto en una instancia de 2 GB.
 onnxruntime==1.26.0
 tokenizers==0.22.2
+
+# Traduccion entre español e ingles. optimum corre el modelo seq2seq
+# sobre onnxruntime, que ya esta; transformers aporta el tokenizador.
+# Ninguno de los dos necesita torch en este uso.
+optimum[onnxruntime]==2.3.0
+transformers==4.57.6
+sentencepiece==0.2.0

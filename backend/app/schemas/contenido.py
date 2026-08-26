@@ -6,6 +6,19 @@ class ContenidoEntrada(BaseModel):
     titulo: str = Field(..., min_length=1)
     texto: str = Field(..., min_length=1)
 
+    # El modelo se entreno sobre un corpus 95,9% en ingles, asi que un texto
+    # en castellano acierta menos. Traducirlo antes de clasificar recupera
+    # buena parte: medido sobre veinte textos coloquiales nuevos, el acierto
+    # paso de 6 a 11 de 20 y la confianza media de 31% a 41%.
+    #
+    # No viene activado porque cuesta alrededor de un segundo y medio, y a
+    # quien escribe en ingles o con vocabulario tecnico no le aporta nada.
+    traducir: bool = Field(
+        False,
+        description="Traducir al ingles antes de clasificar. Mas preciso con "
+                    "texto en español, y bastante mas lento.",
+    )
+
     @field_validator("titulo", "texto")
     @classmethod
     def no_solo_espacios(cls, valor: str) -> str:

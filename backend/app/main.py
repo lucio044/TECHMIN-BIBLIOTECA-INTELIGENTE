@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.routers import (health, contenido, categorias, chat, modelo, biblioteca,
                          sugerencias, busqueda, lote, metricas, correcciones,
-                         modelos_propios, semantica)
+                         modelos_propios, semantica, traduccion)
 from app.core.config import settings
 from app.ml.loader import cargar_modelo
 from app.ml.recomendador import cargar_recomendador
@@ -92,7 +92,7 @@ ROUTERS = (
     health.router, contenido.router, categorias.router, chat.router,
     modelo.router, biblioteca.router, sugerencias.router, busqueda.router,
     lote.router, metricas.router, correcciones.router, modelos_propios.router,
-    semantica.router,
+    semantica.router, traduccion.router,
 )
 
 for r in ROUTERS:

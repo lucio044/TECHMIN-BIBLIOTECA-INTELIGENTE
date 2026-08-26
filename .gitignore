@@ -33,3 +33,8 @@ semantica/modelo/
 *.egg-info/
 build/
 dist/
+
+# Los modelos de traduccion son 342 MB y no son nuestros: los publica
+# su autor y se bajan con traduccion/descargar.py
+traduccion/es-en/
+traduccion/en-es/

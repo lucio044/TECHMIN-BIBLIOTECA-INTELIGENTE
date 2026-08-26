@@ -197,6 +197,17 @@
   .peso b{ color:#8ff0e4; font-weight:600; }
   .chat-meta{ font-size:11px; color:#5c6885; margin-top:8px; }
   .chat-vacio{ color:#5c6885; font-size:13px; text-align:center; padding:26px 10px; line-height:1.6; }
+  /* traduccion */
+  .btn-trad{ font-family:inherit; font-size:11px; font-weight:600; cursor:pointer;
+             color:var(--grad2); background:rgba(35,213,200,.09);
+             border:1px solid rgba(35,213,200,.28); border-radius:8px;
+             padding:3px 9px; margin-left:8px; transition:.15s; }
+  .btn-trad:hover{ background:rgba(35,213,200,.18); }
+  .btn-trad:disabled{ opacity:.5; cursor:default; }
+  .opcion{ display:flex; align-items:center; gap:8px; margin-top:10px;
+           font-size:12.5px; color:var(--txt2); cursor:pointer; }
+  .opcion input{ accent-color:var(--grad1); width:15px; height:15px; cursor:pointer; }
+  .opcion .aclara{ color:var(--muted); font-size:11.5px; }
   .btn-limpiar{ float:right; font-family:inherit; font-size:11px; font-weight:600;
                 text-transform:none; letter-spacing:0; color:var(--txt2); cursor:pointer;
                 background:rgba(255,255,255,.05); border:1px solid var(--cardline);
@@ -341,6 +352,11 @@
             <input class="tin" id="titulo" placeholder="Ej.: Introducción a Spring Boot" value="Introducción a Spring Boot">
             <label class="lab" for="texto">Texto</label>
             <textarea class="tin" id="texto" placeholder="Pegá aquí el contenido técnico…">En este contenido se presentan los conceptos básicos para la creación de APIs REST utilizando Java y Spring Boot, incluyendo controladores y servicios.</textarea>
+            <label class="opcion" title="Traduce el texto al inglés antes de clasificar">
+              <input type="checkbox" id="optTraducir">
+              <span>Mayor precisión con texto en español
+                <span class="aclara">· el modelo aprendió de un corpus 95,9 % en inglés; traducir tarda ~2 s</span></span>
+            </label>
             <button class="btn" id="btn" onclick="clasificar()">✨ Clasificar y archivar</button>
             <div class="ejemplos">Probá con un ejemplo:
               <div>
@@ -968,21 +984,82 @@
         return;
       }
 
+      // El boton se ofrece solo si de verdad hay algo en ingles que traducir.
+      const enIngles = j.resultados.filter(d => pareceIngles(d.titulo + " " + d.extracto)).length;
+
       caja.innerHTML = j.resultados.map(d=>`
         <div class="rel">
           <div class="rel-h">
-            <div class="rt">${esc(d.titulo)}</div>
+            <div class="rt trad">${esc(d.titulo)}</div>
             <span class="sim" title="parecido de significado, coseno de -1 a 1">${d.parecido.toFixed(2)}</span>
           </div>
-          ${d.extracto ? `<div class="rx">${esc(d.extracto)}</div>` : ""}
+          ${d.extracto ? `<div class="rx trad">${esc(d.extracto)}</div>` : ""}
           <div class="rc"><span class="rdot" style="background:${(COLORES[d.categoria]||["#6d5efc"])[0]}"></span>${esc(d.categoria)}</div>
         </div>`).join("") +
-        `<div class="rel-nota">${j.total} de ${(j.documentos_comparados||0).toLocaleString('es')} documentos superaron el umbral</div>`;
+        `<div class="rel-nota">${j.total} de ${(j.documentos_comparados||0).toLocaleString('es')} documentos superaron el umbral
+          ${enIngles ? `<button class="btn-trad" onclick="traducirEnSitio(this, '.trad', document.getElementById('semResultado'))">Ver en español</button>` : ""}
+        </div>`;
     }catch(e){
       caja.innerHTML = `<div class="err">No se pudo buscar
         <div style="font-size:12px;color:var(--muted);margin-top:8px">${esc(e.message)}</div></div>`;
     }finally{
       btn.disabled = false;
+    }
+  }
+
+  /* ---------- traducción a pedido ----------
+     Solo aparece donde hace falta. El corpus está en inglés al 95,9 %, así
+     que hay temas --Mobile tiene 55 documentos en castellano de 5.048-- en
+     los que una consulta en español solo encuentra material en inglés.
+
+     Se traduce cuando alguien lo pide y no de entrada: el modelo tarda
+     alrededor de dos segundos y no tiene sentido cobrárselo a quien lee
+     inglés sin problema. */
+  const ACENTOS = /[áéíóúñü¿¡]/i;
+  const FUNC_ES = /(de|la|el|los|las|un|una|que|con|para|por|del|al|se|su|es|son|como)/gi;
+  const FUNC_EN = /(the|of|and|to|in|is|are|for|with|that|this|from|by|on|as|you|your|it)/gi;
+
+  function pareceIngles(t){
+    if(ACENTOS.test(t)) return false;
+    return (t.match(FUNC_EN)||[]).length > (t.match(FUNC_ES)||[]).length;
+  }
+
+  async function traducir(textos, destino){
+    const r = await fetch(API + "/traducir", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({textos, destino}),
+    });
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || "no se pudo traducir");
+    return j.traducciones;
+  }
+
+  /* Traduce en el sitio los elementos que le pasen. Cada uno guarda su
+     texto original para poder volver, que es lo que espera quien toca el
+     botón dos veces. */
+  async function traducirEnSitio(boton, selector, contenedor){
+    const nodos = [...contenedor.querySelectorAll(selector)];
+    if(!nodos.length) return;
+
+    if(nodos[0].dataset.original){
+      nodos.forEach(n => { n.textContent = n.dataset.original; delete n.dataset.original; });
+      boton.textContent = "Ver en español";
+      return;
+    }
+
+    const antes = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = "traduciendo…";
+    try{
+      const textos = nodos.map(n => n.textContent);
+      const traducidos = await traducir(textos, "es");
+      nodos.forEach((n, i) => { n.dataset.original = textos[i]; n.textContent = traducidos[i]; });
+      boton.textContent = "Ver original";
+    }catch(e){
+      boton.textContent = "no se pudo traducir";
+      setTimeout(() => { boton.textContent = antes; }, 2500);
+    }finally{
+      boton.disabled = false;
     }
   }
 
@@ -1018,7 +1095,10 @@
       }</div><div class="cita-pie"><span>fuente: <b>${esc(h.fuente)}</b></span>
         <span>${esc(h.categoria)}</span>
         <span>parecido ${h.parecido.toFixed(2)}</span>
-        <span>entre ${(h.documentos_consultados||0).toLocaleString('es')} documentos</span></div>` : "";
+        <span>entre ${(h.documentos_consultados||0).toLocaleString('es')} documentos</span>
+        ${h.fragmentos.some(f => pareceIngles(f.texto))
+          ? `<button class="btn-trad" onclick="traducirEnSitio(this, '.frag', this.closest('.burbuja'))">Ver en español</button>`
+          : ""}</div>` : "";
 
       const pesos = (m.terminos||[]).map(t=>
         `<span class="peso">${esc(t.termino)} <b>${t.aporte>=0?"+":""}${t.aporte.toFixed(2)}</b></span>`).join("");
@@ -1275,8 +1355,9 @@
     const local = scoreLocal(titulo+" "+texto);
     let data, via;
     try{
+      const traducir = document.getElementById('optTraducir')?.checked || false;
       const res=await fetch(API+"/contenido",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({titulo,texto})});
+        body:JSON.stringify({titulo,texto,traducir})});
       const j=await res.json();
       if(!res.ok) throw new Error(j.detail||"error");
       data={ titulo, texto, categoria:j.categoria, probabilidad:j.probabilidad,

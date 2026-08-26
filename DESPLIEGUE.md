@@ -126,6 +126,17 @@ git pull
 sudo systemctl restart techmind
 ```
 
+Si es la primera vez con traducción, además:
+
+```bash
+python traduccion/descargar.py
+```
+
+Son 342 MB entre las dos direcciones y no se versionan. Sin ellos el
+endpoint responde 503 explicando qué falta y el resto de la API funciona
+igual; el modelo se carga en el primer uso, no al arrancar, así que quien
+nunca traduce no paga los 250 MB de memoria.
+
 `./nlp` es el paquete `techmind-nlp`, donde vive el procesamiento de texto.
 La API lo importa en lugar de tener su propia copia; instalado en modo
 editable, un `git pull` que lo modifique ya queda aplicado.
