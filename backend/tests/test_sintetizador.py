@@ -180,3 +180,61 @@ def test_distingue_una_pregunta_de_un_contenido():
                       "comodin para buscar archivos",
                       "optimizar consultas con indices en PostgreSQL"):
         assert not parece_pregunta(contenido), f"«{contenido}» no es una pregunta"
+
+
+# --- mayusculas y documentos largos ---------------------------------------
+
+@sin_material
+def test_da_lo_mismo_escribir_en_mayusculas():
+    """«BASE DE DATOS» devolvia cero resultados y «base de datos» siete.
+
+    El modelo distingue mayusculas: la version gritada quedaba a 0,451 de
+    su mejor documento y la normal a 0,705. Tampoco era solo el grito,
+    «Kubernetes» daba 0,409 contra 0,678 de «kubernetes».
+
+    Se normaliza dentro del codificador para que el indice y la consulta no
+    puedan tratarse distinto.
+    """
+    buscador = semantico.cargar_buscador()
+    for texto in ("base de datos", "kubernetes", "contraseñas"):
+        puntajes = {
+            buscador.buscar(v, top_n=1, umbral=-1)[0]["parecido"]
+            for v in (texto, texto.upper(), texto.capitalize())
+        }
+        assert len(puntajes) == 1, f"«{texto}» puntua distinto segun como se escriba"
+
+
+@sin_material
+def test_un_documento_largo_no_gana_por_ser_largo():
+    """El parecido solo premiaba la extension.
+
+    Un PDF de 27 partes aporta mas fragmentos que un articulo de 5 y ganaba
+    aunque tratara el tema de refilon: a «que sabes de base de datos» se le
+    respondia con «DatosIBM», un documento de ciencia de datos.
+
+    Se combina el parecido con la coincidencia de terminos en el titulo.
+    """
+    r = sintetizador.responder("que sabes de base de datos")
+    assert r is not None
+    assert "base de datos" in r["fuente"].lower(), (
+        f"respondio con «{r['fuente']}» en vez de un documento del tema")
+
+
+@sin_material
+def test_a_un_contenido_no_se_le_busca_respuesta():
+    """Buscarle una respuesta a un contenido devolvia disparates.
+
+    Un parrafo sobre Jetpack Compose recuperaba «Fundamentos de Redes y
+    TCP»: el texto es largo y se parece un poco a todo, asi que siempre
+    encuentra algo. Es el mismo defecto que se le señala a otras
+    implementaciones del contenido relacionado.
+
+    Un contenido se clasifica; solo una pregunta se responde.
+    """
+    j = client.post("/v1/chat", json={
+        "texto": "Construccion de interfaces declarativas con Kotlin y Jetpack "
+                 "Compose, manejo del estado y ciclo de vida de las actividades"}).json()
+
+    assert j["del_historico"] is None, (
+        f"le busco respuesta a un contenido: «{(j['del_historico'] or {}).get('fuente')}»")
+    assert j["categoria"] == "Mobile"

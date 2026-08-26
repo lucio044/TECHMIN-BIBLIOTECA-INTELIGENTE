@@ -70,9 +70,13 @@ def responder_chat(texto_usuario: str, historial: list) -> dict:
     # insumo del prompt en el otro.
     _, _, terminos = explicacion.terminos_decisivos(texto_usuario)
 
-    # Antes que nada, ¿el historico dice algo sobre esto? Si lo dice, eso es
-    # una respuesta; la clasificacion sola no lo es.
-    del_historico = sintetizador.responder(texto_usuario)
+    # Solo se busca respuesta si lo que llego es una pregunta. A un
+    # contenido tecnico corresponde clasificarlo, no contestarle: buscarle
+    # una respuesta a un parrafo sobre Jetpack Compose devolvia
+    # «Fundamentos de Redes y TCP», que es exactamente el defecto que se le
+    # senala a otras implementaciones.
+    del_historico = (sintetizador.responder(texto_usuario)
+                     if explicacion.parece_pregunta(texto_usuario) else None)
 
     base = {
         "categoria": resultado.categoria,

@@ -55,7 +55,24 @@ MIN_FRAGMENTOS = 2
 # Cuantos documentos se miran antes de agrupar. Con menos, las partes de un
 # mismo articulo no llegan a juntarse; con muchos mas, se cuelan documentos
 # que ya no vienen al caso y solo cuesta tiempo.
-CANDIDATOS = 40
+CANDIDATOS = 60
+
+# Cuanto pesa que el titulo del documento contenga las palabras de la
+# pregunta, frente al parecido de significado.
+#
+# Hace falta porque el parecido solo premia a los documentos largos: un PDF
+# de 27 partes aporta mas fragmentos que un articulo de 5, y gana aunque
+# hable del tema mas de refilon. A «que sabes de base de datos» respondia
+# «DatosIBM» --un PDF de ciencia de datos-- en vez de «Base de datos
+# relacional».
+#
+# Es lo que en recuperacion de informacion se llama busqueda hibrida:
+# combinar significado con coincidencia de terminos, porque cada una falla
+# donde la otra acierta.
+PESO_TITULO = 0.35
+
+# Palabras demasiado cortas para distinguir nada.
+_LARGO_MINIMO = 4
 
 # «Base de datos relacional Wikipedia parte 4» -> («Base de datos relacional», 4)
 # «Ciberseg Cisco fragmento p. 72»             -> («Ciberseg Cisco», 72)
@@ -84,17 +101,27 @@ def responder(pregunta: str, fragmentos: int = 4) -> Optional[dict]:
 
     # Se agrupa por documento de origen: cuatro partes de un mismo articulo
     # explican mucho mas que cuatro documentos distintos sobre lo mismo.
+    palabras = {p for p in pregunta.lower().split() if len(p) >= _LARGO_MINIMO}
+
     grupos = {}
     for indice, parecido in candidatos:
         doc = buscador.documento(indice)
         if not doc["texto"]:
             continue
         raiz, parte = _raiz_y_parte(doc["titulo"])
+
+        # Que proporcion de las palabras de la pregunta esta en el titulo.
+        solape = (len(palabras & set(raiz.lower().split())) / len(palabras)
+                  if palabras else 0.0)
+        combinado = parecido * (1 - PESO_TITULO) + solape * PESO_TITULO
+
         grupo = grupos.setdefault(raiz, {"partes": [], "mejor": 0.0,
+                                         "combinado": 0.0,
                                          "categoria": doc["categoria"]})
         grupo["partes"].append({"parte": parte, "texto": doc["texto"],
                                 "parecido": round(parecido, 3)})
         grupo["mejor"] = max(grupo["mejor"], parecido)
+        grupo["combinado"] = max(grupo["combinado"], combinado)
 
     if not grupos:
         return None
@@ -105,7 +132,9 @@ def responder(pregunta: str, fragmentos: int = 4) -> Optional[dict]:
     if not con_respaldo:
         return None
 
-    ordenados = sorted(con_respaldo.items(), key=lambda kv: -kv[1]["mejor"])
+    # Se ordena por el combinado; el umbral sigue mirando el parecido puro,
+    # que es lo que dice si el documento habla del tema o no.
+    ordenados = sorted(con_respaldo.items(), key=lambda kv: -kv[1]["combinado"])
     raiz, grupo = ordenados[0]
 
     # Por numero de parte, no por parecido: asi el texto se lee en el orden

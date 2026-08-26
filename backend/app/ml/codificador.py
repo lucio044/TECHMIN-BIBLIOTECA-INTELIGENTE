@@ -39,8 +39,24 @@ class Codificador:
             salida.append(self._codificar(textos[i:i + lote]))
         return np.vstack(salida) if salida else np.zeros((0, DIMENSIONES), dtype=np.float32)
 
+    @staticmethod
+    def normalizar(texto: str) -> str:
+        """Todo a minusculas, de los dos lados.
+
+        El modelo distingue mayusculas: «BASE DE DATOS» quedaba a 0,451 de
+        su mejor documento y «base de datos» a 0,705. No es solo el grito,
+        tambien la mayuscula normal: «Kubernetes» daba 0,409 y «kubernetes»
+        0,677.
+
+        Se normaliza aca adentro y no en quien llama, para que el indice y
+        la consulta no puedan tratarse distinto. Si esto viviera en el
+        buscador, el dia que alguien agregue otra ruta se olvidaria, y el
+        sintoma seria una busqueda que no encuentra nada sin ningun error.
+        """
+        return str(texto).lower()
+
     def _codificar(self, textos) -> np.ndarray:
-        cods = self.tok.encode_batch([str(t) for t in textos])
+        cods = self.tok.encode_batch([self.normalizar(t) for t in textos])
         ids = np.array([c.ids for c in cods], dtype=np.int64)
         mascara = np.array([c.attention_mask for c in cods], dtype=np.int64)
 
