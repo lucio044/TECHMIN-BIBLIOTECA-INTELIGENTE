@@ -156,7 +156,13 @@ $HOST {
 CADDY
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now techmind
+
+# enable deja el servicio arrancando solo al encender la maquina; restart lo
+# levanta ahora. Antes aca decia `enable --now`, que sobre un servicio ya
+# corriendo no hace nada: volver a ejecutar el script no aplicaba ni el
+# codigo nuevo ni los cambios de la unidad, y el proceso viejo seguia vivo.
+sudo systemctl enable techmind
+sudo systemctl restart techmind
 sudo systemctl restart caddy
 
 echo
