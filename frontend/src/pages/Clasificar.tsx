@@ -48,7 +48,7 @@ export default function Clasificar({
   useEffect(() => {
     let vivo = true;
     api.sugerencias()
-      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 6)); })
+      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 4)); })
       .catch(() => { /* sin sugerencias la pestaña funciona igual */ });
     return () => { vivo = false; };
   }, []);
