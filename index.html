@@ -979,7 +979,7 @@
       // ingles. A quien pregunto en ingles no se le ofrece: pidio en el idioma
       // que recibio. Y si lo que volvio ya esta en español, no hay nada que
       // traducir y el boton seria un boton que no hace nada.
-      const ofrecerTraduccion = !preguntoEnIngles(consulta) &&
+      const ofrecerTraduccion = HAY_TRADUCTOR && !preguntoEnIngles(consulta) &&
         j.resultados.some(d => pareceIngles(d.titulo + " " + d.extracto));
 
       caja.innerHTML = j.resultados.map(d=>`
@@ -1007,9 +1007,9 @@
      que hay temas --Mobile tiene 55 documentos en castellano de 5.048-- en
      los que una consulta en español solo encuentra material en inglés.
 
-     Se traduce cuando alguien lo pide y no de entrada: el modelo tarda
-     alrededor de dos segundos y no tiene sentido cobrárselo a quien lee
-     inglés sin problema. */
+     Se traduce cuando alguien lo pide y no de entrada: son 79 ms por texto,
+     pero también 171 MB de modelo por dirección, y no hay motivo para
+     cargarlos por quien lee inglés sin problema. */
   /* Deteccion de idioma: un acento resuelve el caso, y si no hay, gana
      quien puso mas palabras funcionales.
 
@@ -1022,6 +1022,11 @@
      «autenticacion con tokens» daba ingles por el «to» de «tokens» y el
      «on» de «autenticacion». Sobre treinta consultas de prueba, 13
      aciertos pasaron a 28. */
+  // Lo responde /v1/traducir/estado al arrancar. Empieza en false para no
+  // ofrecer el boton en el rato que tarda: si llega y esta, aparece en la
+  // proxima busqueda; si no llega, no se ofrece nada que no funcione.
+  let HAY_TRADUCTOR = false;
+
   const ACENTOS = /[áéíóúñü¿¡]/i;
   const FUNC_ES = /\b(de|la|el|los|las|un|una|que|con|para|por|del|al|se|su|es|son|como|cuando|donde|pero|mas|muy|todo|este|esta|hay|sobre|entre|desde|hasta|sin|cual|cuales|porque|si|no|lo|mi|tiene|puedo|hacer|mejor|nuestro)\b/gi;
   const FUNC_EN = /\b(the|of|and|to|in|is|are|for|with|that|this|from|by|on|as|you|your|it|be|have|has|can|will|not|how|do|does|did|what|when|where|why|which|an|or|if|should|would|could|about|between|over|under|than|best|my)\b/gi;
@@ -1120,7 +1125,7 @@
         <span>${esc(h.categoria)}</span>
         <span>parecido ${h.parecido.toFixed(2)}</span>
         <span>entre ${(h.documentos_consultados||0).toLocaleString('es')} documentos</span>
-        ${!preguntoEnIngles(pregunta) && h.fragmentos.some(f => pareceIngles(f.texto))
+        ${HAY_TRADUCTOR && !preguntoEnIngles(pregunta) && h.fragmentos.some(f => pareceIngles(f.texto))
           ? `<button class="btn-trad" onclick="traducirEnSitio(this, '.frag', this.closest('.burbuja'))">Ver en español</button>`
           : ""}</div>` : "";
 
@@ -1518,6 +1523,15 @@
 
   /* ---------- init ---------- */
   actualizarContadores();
+
+  // Se pregunta si el traductor esta instalado antes de ofrecer el boton.
+  // El despliegue baja una sola direccion --el boton solo traduce del
+  // ingles-- y un despliegue puede no tener ninguna: son 171 MB que no se
+  // versionan. Ofrecer un boton que va a fallar es peor que no ofrecerlo.
+  fetch(API + "/traducir/estado")
+    .then(r => r.ok ? r.json() : null)
+    .then(e => { HAY_TRADUCTOR = !!(e && e.en_es); })
+    .catch(() => { HAY_TRADUCTOR = false; });
 
   // El boton atras del navegador vuelve a la vista anterior en vez de sacar
   // al visitante del sitio.

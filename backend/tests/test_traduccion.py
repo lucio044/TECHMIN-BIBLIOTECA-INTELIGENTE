@@ -17,8 +17,14 @@ from app.ml import traductor
 
 client = TestClient(app)
 
-hay = traductor.hay_traductor("es-en") and traductor.hay_traductor("en-es")
-sin_modelo = pytest.mark.skipif(not hay, reason="faltan los modelos de traducción")
+# Se miran por separado: el despliegue baja solo `en-es`, que es la unica
+# direccion que usa el boton. Un `and` haria que en el servidor se saltaran
+# tambien las pruebas de la direccion que si esta instalada.
+sin_en_es = pytest.mark.skipif(not traductor.hay_traductor("en-es"),
+                               reason="falta el modelo en-es")
+sin_es_en = pytest.mark.skipif(not traductor.hay_traductor("es-en"),
+                               reason="falta el modelo es-en (solo se instala con --ambas)")
+sin_modelo = sin_en_es
 
 
 @pytest.fixture(autouse=True)
@@ -70,12 +76,36 @@ def test_traduce_del_ingles_al_espanol():
     assert "contraseñas" in t.lower() or "claves" in t.lower()
 
 
-@sin_modelo
+@sin_es_en
 def test_traduce_del_espanol_al_ingles():
+    """Esta dirección solo se instala con `descargar.py --ambas`."""
     r = client.post("/v1/traducir", json={
         "textos": ["¿Cómo protejo las contraseñas de mis usuarios?"], "destino": "en"})
     assert r.status_code == 200
     assert "password" in r.json()["traducciones"][0].lower()
+
+
+def test_avisa_cuando_falta_la_direccion_en_vez_de_devolver_el_original(monkeypatch):
+    """Sin el modelo, un 503 explicando qué falta.
+
+    Devolver el texto sin tocar haría creer que se tradujo y que la
+    traducción es idéntica al original.
+
+    Es el caso normal del despliegue, no una rareza: `descargar.py` baja
+    solo `en-es`, así que `es-en` no está salvo que se pida.
+    """
+    monkeypatch.setattr(traductor, "hay_traductor", lambda d: d != "es-en")
+    r = client.post("/v1/traducir", json={
+        "textos": ["¿Cómo protejo las contraseñas de mis usuarios?"], "destino": "en"})
+    assert r.status_code == 503
+    assert "descargar" in r.json()["detail"].lower()
+
+
+def test_el_estado_distingue_las_dos_direcciones(monkeypatch):
+    """La página mira `en_es` para decidir si ofrecer el botón."""
+    monkeypatch.setattr(traductor, "hay_traductor", lambda d: d == "en-es")
+    e = client.get("/v1/traducir/estado").json()
+    assert e["en_es"] is True and e["es_en"] is False
 
 
 @sin_modelo
@@ -109,9 +139,9 @@ def test_el_estado_dice_que_hay_disponible():
 def test_clasificar_no_acepta_pedidos_de_traduccion():
     """Hubo una opción para traducir la entrada antes de clasificar.
 
-    Se sacó: ganaba precisión a cambio de dos segundos por petición y de una
-    respuesta que dependía de si una casilla estaba marcada. Si alguien la
-    reintroduce sin querer, esta prueba lo dice.
+    Se sacó porque hacía que el mismo texto diera dos categorías según la
+    casilla estuviera marcada o no. Si alguien la reintroduce sin querer,
+    esta prueba lo dice.
     """
     texto = "Cómo protejo las contraseñas de los usuarios de mi sitio web"
     a = client.post("/v1/contenido", json={"titulo": texto[:50], "texto": texto}).json()

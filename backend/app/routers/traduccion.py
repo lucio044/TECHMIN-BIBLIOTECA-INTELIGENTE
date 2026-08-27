@@ -17,9 +17,9 @@ def traducir(entrada: TraduccionEntrada, _=Depends(identificar)):
     5.048-- donde una consulta en español solo encuentra material en
     ingles.
 
-    Se traduce a pedido y no de entrada: el modelo tarda alrededor de un
-    segundo y medio por texto, y no tiene sentido cobrarselo a quien no lo
-    necesita.
+    Se traduce a pedido y no de entrada: son 79 ms por texto, pero tambien
+    171 MB de modelo por direccion, y no hay motivo para cargarlos por
+    alguien que lee ingles sin problema.
 
     Un texto que ya esta en el idioma pedido se devuelve tal cual.
     """

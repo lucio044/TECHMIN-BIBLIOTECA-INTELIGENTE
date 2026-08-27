@@ -129,13 +129,24 @@ sudo systemctl restart techmind
 Si es la primera vez con traducción, además:
 
 ```bash
-python traduccion/descargar.py
+.venv/bin/python traduccion/descargar.py
 ```
+
+Con `.venv/bin/python`, no con `python` a secas: el `python` del sistema no
+tiene las dependencias y el descargador falla al importar.
 
 Son 342 MB entre las dos direcciones y no se versionan. Sin ellos el
 endpoint responde 503 explicando qué falta y el resto de la API funciona
-igual; el modelo se carga en el primer uso, no al arrancar, así que quien
-nunca traduce no paga los 250 MB de memoria.
+igual; el modelo se carga en el primer uso y no al arrancar, así que quien
+nunca traduce no paga esa memoria.
+
+La traducción **no necesita torch**. El bucle de decodificación está
+escrito en `backend/app/ml/traductor.py` y corre sobre el mismo
+`onnxruntime` que ya usa la búsqueda semántica. Es a propósito: torch son
+800 MB sobre los 2 GB de la instancia, y la alternativa corta
+—`optimum[onnxruntime]`— además de arrastrarlo no resuelve sus propias
+dependencias. Si en algún `pip install` aparece torch, algo se reintrodujo
+y hay que mirarlo antes de que la instancia se quede sin memoria.
 
 `./nlp` es el paquete `techmind-nlp`, donde vive el procesamiento de texto.
 La API lo importa en lugar de tener su propia copia; instalado en modo

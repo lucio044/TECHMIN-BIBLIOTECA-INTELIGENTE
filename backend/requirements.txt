@@ -37,9 +37,19 @@ psycopg[binary]==3.2.3
 onnxruntime==1.26.0
 tokenizers==0.22.2
 
-# Traduccion entre español e ingles. optimum corre el modelo seq2seq
-# sobre onnxruntime, que ya esta; transformers aporta el tokenizador.
-# Ninguno de los dos necesita torch en este uso.
-optimum[onnxruntime]==2.3.0
+# Traduccion entre español e ingles. Solo el tokenizador: el modelo corre
+# sobre el onnxruntime de arriba y el bucle de decodificacion esta escrito
+# en app/ml/traductor.py.
+#
+# Estaba puesto optimum[onnxruntime], que es la forma corta, y no servia por
+# dos motivos. No instala --arrastra optimum-onnx, que pide optimum~=2.1.0
+# contra el 2.3.0 pedido aca, y pip corta con ResolutionImpossible-- y
+# ademas su generate() es torch por dentro: 800 MB sobre una instancia de
+# 2 GB, para algo que decodificado a mano corre 24 veces mas rapido.
+#
+# transformers se queda solo por el MarianTokenizer, que va por
+# sentencepiece y no necesita ningun framework de tensores. La libreria
+# `tokenizers` no sirve aca: el tokenizer.json de Xenova trae el charsmap
+# del normalizador en null y su lector de Rust entra en panico.
 transformers==4.57.6
 sentencepiece==0.2.0

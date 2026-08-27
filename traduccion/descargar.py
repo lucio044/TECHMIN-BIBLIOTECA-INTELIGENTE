@@ -1,11 +1,25 @@
 # -*- coding: utf-8 -*-
 """Trae los modelos de traducción entre español e inglés.
 
-    python traduccion/descargar.py
+    python traduccion/descargar.py            # solo en-es, que es lo que usa
+    python traduccion/descargar.py --ambas    # las dos direcciones
 
-Son 342 MB entre las dos direcciones y no se versionan. El servicio los usa
-si están; si no, el endpoint responde 503 explicando que faltan y el resto
-de la API funciona igual.
+Por defecto baja una sola dirección: el botón «Ver en español» traduce el
+material del histórico, que es inglés, y no hay nada más que traduzca. La
+otra son 171 MB de disco y 292 MB de memoria sin nadie que los pida.
+
+Eso importa acá. Medido con todo cargado en la instancia de 2 GB:
+
+    la API mas el clasificador       243 MB
+    + la busqueda semantica          724 MB
+    + el traductor en-es           1.031 MB
+    + el traductor es-en           1.322 MB
+
+La última fila deja unos 700 MB para el sistema operativo y Caddy. Entra,
+pero sin margen para nada, y a cambio de una dirección que no se usa.
+
+No se versionan. El servicio los usa si están; si no, el endpoint responde
+503 explicando qué falta y el resto de la API funciona igual.
 
 QUÉ MODELO
 
@@ -14,7 +28,7 @@ QUÉ MODELO
 
 Se eligió un modelo local y no un servicio de traducción porque un servicio
 externo agrega una clave, una factura y un punto de falla que no se
-controla. Lo que cuesta es tiempo: alrededor de segundo y medio por texto.
+controla. Cuesta 79 ms por texto, decodificando sobre onnxruntime.
 
 POR QUÉ HACE FALTA
 
@@ -76,8 +90,14 @@ def bajar(url: str, destino: Path) -> bool:
 
 
 def main() -> int:
+    ambas = "--ambas" in sys.argv
+    pedidas = DIRECCIONES if ambas else {"en-es": DIRECCIONES["en-es"]}
+    if not ambas:
+        print("Solo en-es, que es la direccion que usa el boton.")
+        print("Para las dos: python traduccion/descargar.py --ambas\n")
+
     total = 0
-    for direccion, repo in DIRECCIONES.items():
+    for direccion, repo in pedidas.items():
         print(f"{direccion}:")
         (AQUI / direccion / "onnx").mkdir(parents=True, exist_ok=True)
         for archivo in ARCHIVOS:

@@ -35,10 +35,16 @@ def clasificar_contenido(entrada: ContenidoEntrada) -> ContenidoSalida:
 
     # Se clasifica el texto tal como lo escribieron. Hubo una opcion para
     # traducirlo al ingles antes --el modelo aprendio de un corpus 95,9% en
-    # ese idioma-- y se saco: ganaba precision a cambio de dos segundos por
-    # peticion y de una respuesta que dependia de si una casilla estaba
-    # marcada. La traduccion quedo donde se pide y se ve: el boton «Ver en
-    # español» sobre resultados que volvieron en ingles.
+    # ese idioma-- y se saco.
+    #
+    # El motivo original era el costo: 1,4 s por peticion contra 126 ms. Ese
+    # argumento ya no vale, porque la traduccion pasa a decodificarse a mano
+    # y cuesta 79 ms. El que queda en pie es el otro: la opcion hacia que el
+    # mismo texto diera dos categorias segun una casilla estuviera marcada,
+    # y una pagina asi es peor que una que acierta un poco menos.
+    #
+    # La traduccion queda donde se pide y se ve: el boton «Ver en español»
+    # sobre resultados que volvieron en ingles.
     texto_preparado = preparar_entrada_modelo(entrada.titulo, entrada.texto)
 
     proba = modelo.predict_proba([texto_preparado])[0]

@@ -137,6 +137,57 @@ def test_el_procesamiento_de_texto_no_esta_duplicado():
     assert "from app.ml.keywords" not in clasificador
 
 
+# --- lo que no entra en 2 GB ----------------------------------------------
+
+def test_no_se_depende_de_torch_ni_de_optimum():
+    """La instancia tiene 2 GB y torch son 800 MB instalados.
+
+    Paso: `optimum[onnxruntime]` parecia la forma corta de correr el modelo
+    de traduccion, y traia dos problemas. No instalaba --arrastra
+    optimum-onnx, que pide optimum~=2.1.0 contra el 2.3.0 pedido, y pip
+    corta con ResolutionImpossible-- y su `generate()` es torch por dentro,
+    cosa que aca no se noto porque el entorno de desarrollo lo tenia
+    instalado.
+
+    El bucle de decodificacion se escribio a mano sobre onnxruntime. Sale
+    24 veces mas rapido y no necesita ninguno de los dos.
+    """
+    req = io.open(APP.parents[0] / "requirements.txt", encoding="utf-8").read()
+    activas = [l.strip() for l in req.splitlines()
+               if l.strip() and not l.strip().startswith("#")]
+    prohibidas = [l for l in activas
+                  if re.match(r"^(torch|optimum)\b", l, re.IGNORECASE)]
+    assert not prohibidas, (
+        f"volvieron a requirements: {prohibidas}. No entran en 2 GB; "
+        f"la traduccion decodifica a mano en app/ml/traductor.py")
+
+    culpables = [n for n, t in _modulos().items()
+                 if re.search(r"^\s*(import|from)\s+(torch|optimum)\b", t, re.M)]
+    assert not culpables, f"importan torch u optimum: {culpables}"
+
+
+def test_la_traduccion_no_pide_tensores_de_torch():
+    """`return_tensors="pt"` obliga a torch aunque el modelo sea ONNX.
+
+    Es la forma en que esto se colo la primera vez: el tokenizador devolvia
+    tensores de PyTorch y nadie lo miro, porque en desarrollo estaba.
+
+    Se mira el arbol y no el texto: el modulo explica en su docstring por
+    que no se usa, y una busqueda cruda se tropieza con esa explicacion.
+    """
+    arbol = ast.parse(io.open(APP / "ml" / "traductor.py", encoding="utf-8").read())
+    culpables = [
+        n.lineno for n in ast.walk(arbol)
+        if isinstance(n, ast.Call)
+        for k in n.keywords
+        if k.arg == "return_tensors"
+    ]
+    assert not culpables, (
+        f'traductor.py volvio a pedir tensores en la linea {culpables}; '
+        f'con "pt" necesita torch y con "np" revienta en generate(). '
+        f'El bucle de aca usa listas de Python.')
+
+
 # --- la pagina -------------------------------------------------------------
 
 PAGINA = APP.parents[1] / "index.html"
