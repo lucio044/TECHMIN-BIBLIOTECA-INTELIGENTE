@@ -18,4 +18,9 @@ preparar.py
 
 # El prototipo de un solo archivo, reemplazado por frontend/. Sigue en el
 # repositorio pero no se publica.
-index.html
+#
+# La barra inicial es obligatoria: sin ella el patron coincide en cualquier
+# nivel y se lleva puesto frontend/index.html, que es el punto de entrada de
+# Vite. Eso rompio un despliegue con «Could not resolve entry module
+# index.html», que no dice en ningun momento que el archivo fue excluido.
+/index.html
