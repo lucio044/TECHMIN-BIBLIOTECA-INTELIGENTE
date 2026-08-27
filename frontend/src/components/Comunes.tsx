@@ -28,27 +28,30 @@ export function Error({ mensaje, detalle }: { mensaje: string; detalle?: string 
   );
 }
 
-/** El anillo de confianza. El trazo se dibuja con dasharray sobre una
- *  circunferencia de radio 52, que son 326,7 de perimetro. */
+/** El anillo de confianza.
+ *
+ *  Las medidas son las del prototipo y no se pueden cambiar sueltas: la
+ *  clase `.ring` mide 100 px, asi que un SVG de 120 se desborda y el trazo
+ *  se ve como un aro gordo mal recortado. 100 de lado, radio 45, grosor 9.
+ *
+ *  El perimetro --2·pi·45-- es lo que consume el dasharray: se pinta la
+ *  fraccion que corresponde a la confianza y el resto queda transparente.
+ *  La rotacion de -90 grados la pone el CSS, que ya trae `.ring svg`. */
 export function Anillo({ valor, categoria }: { valor: number; categoria: Categoria }) {
-  const PERIMETRO = 2 * Math.PI * 52;
-  const [a, b] = COLORES[categoria] ?? ["#6d5efc", "#8b7dff"];
-  const id = `grad-${categoria.replace(/[^a-z]/gi, "")}`;
+  const PERIMETRO = 2 * Math.PI * 45;
+  const [color] = COLORES[categoria] ?? ["#6d5efc"];
+  const pintado = valor * PERIMETRO;
 
   return (
     <div className="ring">
-      <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor={a} />
-            <stop offset="1" stopColor={b} />
-          </linearGradient>
-        </defs>
-        <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="9" />
+      <svg width="100" height="100" aria-hidden="true">
+        <circle cx="50" cy="50" r="45" fill="none"
+                stroke="rgba(255,255,255,.08)" strokeWidth="9" />
         <circle
-          cx="60" cy="60" r="52" fill="none" stroke={`url(#${id})`} strokeWidth="9"
-          strokeLinecap="round" transform="rotate(-90 60 60)"
-          strokeDasharray={`${(valor * PERIMETRO).toFixed(1)} ${PERIMETRO.toFixed(1)}`}
+          cx="50" cy="50" r="45" fill="none" stroke={color} strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={`${pintado.toFixed(1)} ${PERIMETRO.toFixed(1)}`}
+          style={{ filter: `drop-shadow(0 0 6px ${color}88)` }}
         />
       </svg>
       <div className="val">
@@ -56,6 +59,21 @@ export function Anillo({ valor, categoria }: { valor: number; categoria: Categor
         <span>confianza</span>
       </div>
     </div>
+  );
+}
+
+/** La categoria como insignia con degradado, que es como la muestra el
+ *  prototipo. En texto plano se pierde el color, que es lo que hace que se
+ *  reconozca la categoria de un vistazo. */
+export function Insignia({ categoria }: { categoria: Categoria }) {
+  const [a, b] = COLORES[categoria] ?? ["#6d5efc", "#8b7dff"];
+  return (
+    <span
+      className="cat-badge"
+      style={{ background: `linear-gradient(135deg,${a},${b})`, boxShadow: `0 10px 30px ${a}55` }}
+    >
+      <span className="dot" /> {categoria}
+    </span>
   );
 }
 

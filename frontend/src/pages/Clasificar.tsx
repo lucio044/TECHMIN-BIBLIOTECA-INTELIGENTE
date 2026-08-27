@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import * as api from "../lib/api";
 import { ErrorApi } from "../lib/api";
-import { Anillo, Cargando, Error as Aviso, colorDe } from "../components/Comunes";
+import { Anillo, Cargando, Error as Aviso, Insignia, colorDe } from "../components/Comunes";
 import type {
   ContenidoSalida, EntradaBiblioteca, RespuestaBusqueda, TerminoSugerido,
 } from "../types";
@@ -99,6 +99,17 @@ export default function Clasificar({
     }
   }
 
+  function limpiar() {
+    setTitulo("");
+    setTexto("");
+    setResultado(null);
+    setExploracion(null);
+    setError(null);
+    setArchivado(false);
+  }
+
+  const hayAlgo = !!(titulo || texto || resultado || exploracion);
+
   function cargarEjemplo(e: (typeof EJEMPLOS)[number]) {
     setTitulo(e.titulo);
     setTexto(e.texto);
@@ -117,7 +128,12 @@ export default function Clasificar({
 
       <div className="grid">
         <div className="card">
-          <div className="card-h">✍️ Contenido a clasificar</div>
+          <div className="card-h">
+            ✍️ Contenido a clasificar
+            {hayAlgo && (
+              <button className="btn-limpiar" onClick={limpiar}>Limpiar</button>
+            )}
+          </div>
           <div className="card-b">
             <label className="lab" htmlFor="titulo">Título</label>
             <input
@@ -211,15 +227,13 @@ export default function Clasificar({
 function Resultado({ datos, archivado }: { datos: ContenidoSalida; archivado: boolean }) {
   return (
     <>
-      <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="res-top">
         <Anillo valor={datos.probabilidad} categoria={datos.categoria} />
         <div>
-          <div className="rc" style={{ fontSize: 18, fontWeight: 700 }}>
-            <span className="rdot" style={{ background: colorDe(datos.categoria) }} />
-            {datos.categoria}
-          </div>
+          <div className="cat-mini">Categoría detectada</div>
+          <Insignia categoria={datos.categoria} />
           {archivado && (
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
               Archivado en tu biblioteca
             </div>
           )}
@@ -286,8 +300,8 @@ function Vacio() {
     <div style={{ opacity: 0.45 }}>
       <div className="res-top">
         <div className="ring">
-          <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-            <circle cx="60" cy="60" r="52" fill="none"
+          <svg width="100" height="100" aria-hidden="true">
+            <circle cx="50" cy="50" r="45" fill="none"
                     stroke="rgba(255,255,255,.08)" strokeWidth="9" />
           </svg>
           <div className="val">
@@ -296,13 +310,10 @@ function Vacio() {
           </div>
         </div>
         <div>
-          <div className="rc" style={{ fontSize: 18, fontWeight: 700 }}>
-            <span className="rdot" style={{ background: "var(--muted)" }} />
-            Categoría
-          </div>
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-            entre las 8 del modelo
-          </div>
+          <div className="cat-mini">Categoría detectada</div>
+          <span className="cat-badge" style={{ background: "rgba(255,255,255,.06)" }}>
+            <span className="dot" /> —
+          </span>
         </div>
       </div>
 
