@@ -128,12 +128,7 @@ export default function Clasificar({
 
       <div className="grid">
         <div className="card">
-          <div className="card-h">
-            ✍️ Contenido a clasificar
-            {hayAlgo && (
-              <button className="btn-limpiar" onClick={limpiar}>Limpiar</button>
-            )}
-          </div>
+          <div className="card-h">✍️ Contenido a clasificar</div>
           <div className="card-b">
             <label className="lab" htmlFor="titulo">Título</label>
             <input
@@ -149,9 +144,16 @@ export default function Clasificar({
               placeholder="Pegá aquí el contenido técnico…"
             />
 
-            <button className="btn" onClick={enviar} disabled={cargando}>
-              {cargando ? "Clasificando…" : "✨ Clasificar y archivar"}
-            </button>
+            <div className="chat-envio" style={{ marginTop: 4 }}>
+              <button className="btn" onClick={enviar} disabled={cargando}>
+                {cargando ? "Clasificando…" : "✨ Clasificar y archivar"}
+              </button>
+              {hayAlgo && (
+                <button className="btn-sm" onClick={limpiar} style={{ flex: "none" }}>
+                  Limpiar
+                </button>
+              )}
+            </div>
 
             <div className="ejemplos">
               Probá con un ejemplo:
@@ -245,7 +247,7 @@ function Resultado({ datos, archivado }: { datos: ContenidoSalida; archivado: bo
           <div className="lab" style={{ marginTop: 18 }}>Palabras clave</div>
           <div className="kwcloud">
             {datos.informacion_adicional.map((p) => (
-              <span key={p} className="peso">{p}</span>
+              <span key={p} className="chip">{p}</span>
             ))}
           </div>
         </>
@@ -270,15 +272,14 @@ function Resultado({ datos, archivado }: { datos: ContenidoSalida; archivado: bo
         <>
           <div className="lab" style={{ marginTop: 18 }}>Contenido relacionado del histórico</div>
           {datos.contenidos_relacionados.map((c, i) => (
-            <div className="rel" key={c.id ?? i}>
+            <div className="rel" key={i}>
               <div className="rel-h">
                 <div className="rt">{c.titulo}</div>
-                {c.parecido !== undefined && (
-                  <span className="sim" title="parecido de significado">
-                    {c.parecido.toFixed(2)}
-                  </span>
-                )}
+                <span className="sim" title="similitud del coseno">
+                  {c.similitud.toFixed(2)}
+                </span>
               </div>
+              {c.extracto && <div className="rx">{c.extracto}</div>}
               <div className="rc">
                 <span className="rdot" style={{ background: colorDe(c.categoria) }} />
                 {c.categoria}
@@ -319,10 +320,10 @@ function Vacio() {
 
       <div className="lab">Palabras clave</div>
       <div className="kwcloud">
-        <span className="peso">—</span>
-        <span className="peso">—</span>
-        <span className="peso">—</span>
-        <span className="peso">—</span>
+        <span className="chip">—</span>
+        <span className="chip">—</span>
+        <span className="chip">—</span>
+        <span className="chip">—</span>
       </div>
 
       <div className="lab" style={{ marginTop: 18 }}>Otras categorías consideradas</div>

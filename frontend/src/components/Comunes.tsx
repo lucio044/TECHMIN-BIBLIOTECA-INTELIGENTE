@@ -2,15 +2,20 @@
 
 import type { Categoria } from "../types";
 
+/** La paleta del prototipo, copiada tal cual.
+ *
+ *  No es decorativa: esta construida alrededor del violeta y el turquesa de
+ *  la pagina. Invente una version propia al portar --naranjas, rosas, un
+ *  amarillo chillon para Bases de Datos-- y desentonaba con el fondo. */
 export const COLORES: Record<string, [string, string]> = {
   "Backend": ["#6d5efc", "#8b7dff"],
-  "Frontend": ["#23d5c8", "#5ae5da"],
-  "Mobile": ["#ff8f5e", "#ffab85"],
-  "Ciencia de Datos": ["#f45d9c", "#ff85b8"],
-  "Bases de Datos": ["#ffc857", "#ffd98a"],
-  "DevOps / Cloud": ["#5eb0ff", "#8ac8ff"],
-  "Seguridad": ["#ff6b6b", "#ff9a9a"],
-  "Programación General": ["#a78bfa", "#c4b0ff"],
+  "Frontend": ["#23d5c8", "#3ee6d8"],
+  "Mobile": ["#2ecc71", "#4fe08a"],
+  "Ciencia de Datos": ["#a855f7", "#c07bff"],
+  "Bases de Datos": ["#f59e0b", "#ffbb3c"],
+  "DevOps / Cloud": ["#38bdf8", "#5fd0ff"],
+  "Seguridad": ["#f43f6e", "#ff6d90"],
+  "Programación General": ["#94a3b8", "#b3c0d4"],
 };
 
 export const colorDe = (c: string) => COLORES[c]?.[0] ?? "#6d5efc";

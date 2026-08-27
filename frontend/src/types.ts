@@ -19,12 +19,13 @@ export interface CategoriaRanking {
   probabilidad: number;
 }
 
+/** Tal como lo devuelve POST /v1/contenido. El campo se llama `similitud`,
+ *  no `parecido` --ese es el de la busqueda semantica-- y no hay `id`. */
 export interface ContenidoRelacionado {
-  id?: number;
   titulo: string;
+  extracto: string;
   categoria: Categoria;
-  parecido?: number;
-  extracto?: string;
+  similitud: number;
 }
 
 /** Lo que pide el enunciado: POST /contenido con titulo y texto. */
