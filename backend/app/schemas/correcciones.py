@@ -10,6 +10,16 @@ class CorreccionEntrada(BaseModel):
     categoria_correcta: str = Field(..., min_length=1, max_length=60)
     comentario: Optional[str] = Field(None, max_length=500)
 
+    # `min_length` no alcanza: una cadena de espacios lo cumple y llega al
+    # servicio igual. Aca hoy salta antes otro campo obligatorio, pero la
+    # proteccion tiene que estar en el campo y no depender del orden.
+    @field_validator("titulo", "texto")
+    @classmethod
+    def no_solo_espacios(cls, valor: str) -> str:
+        if not valor.strip():
+            raise ValueError("El campo no puede contener solo espacios en blanco")
+        return valor
+
     @field_validator("categoria_correcta")
     @classmethod
     def distinta_de_la_predicha(cls, v, info):

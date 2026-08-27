@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class MensajeChat(BaseModel):
@@ -9,8 +9,19 @@ class MensajeChat(BaseModel):
 
 
 class ChatEntrada(BaseModel):
-    texto: str
+    # El minimo y el validador son los mismos que en ContenidoEntrada. Sin
+    # ellos un texto vacio pasaba la validacion y reventaba mas abajo: la
+    # API devolvia 500 --«ocurrio un error interno inesperado»-- cuando lo
+    # correcto es un 422 diciendo que el campo no puede ir vacio.
+    texto: str = Field(..., min_length=1)
     historial: list[MensajeChat] = []
+
+    @field_validator("texto")
+    @classmethod
+    def no_solo_espacios(cls, valor: str) -> str:
+        if not valor.strip():
+            raise ValueError("El campo no puede contener solo espacios en blanco")
+        return valor
 
 
 class TerminoDecisivo(BaseModel):

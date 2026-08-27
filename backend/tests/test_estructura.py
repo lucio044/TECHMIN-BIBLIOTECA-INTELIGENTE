@@ -226,3 +226,35 @@ def test_la_pagina_detecta_el_idioma_con_limites_de_palabra():
         assert m, f"no se encontro {nombre} en la pagina"
         assert m.group(1).startswith("/\\b") and m.group(1).endswith("\\b/gi"), (
             f"{nombre} perdio los limites de palabra: {m.group(1)[:40]}")
+
+
+def test_todo_texto_de_entrada_se_valida_igual():
+    """Un campo de texto obligatorio no puede aceptar la cadena vacia.
+
+    Paso con POST /v1/chat: `texto` era un `str` pelado, sin min_length ni
+    validador, mientras el mismo campo en ContenidoEntrada si los tenia. Una
+    cadena vacia pasaba la validacion y reventaba mas abajo, asi que la API
+    devolvia 500 --«ocurrio un error interno inesperado»-- en lugar de un
+    422 diciendo cual es el campo mal.
+    """
+    esquemas = pathlib.Path(__file__).resolve().parents[1] / "app" / "schemas"
+    faltan = []
+    for archivo in sorted(esquemas.glob("*.py")):
+        texto = io.open(archivo, encoding="utf-8").read()
+        arbol = ast.parse(texto)
+        for clase in [n for n in ast.walk(arbol) if isinstance(n, ast.ClassDef)]:
+            # solo las de entrada: las de salida las llena el propio servicio
+            if not clase.name.endswith("Entrada"):
+                continue
+            tiene_validador = "no_solo_espacios" in ast.get_source_segment(texto, clase)
+            for campo in [n for n in clase.body if isinstance(n, ast.AnnAssign)]:
+                nombre = getattr(campo.target, "id", "")
+                if nombre not in ("texto", "titulo", "contenido", "consulta", "termino"):
+                    continue
+                fuente = ast.get_source_segment(texto, campo) or ""
+                if "min_length" not in fuente or not tiene_validador:
+                    faltan.append(f"{archivo.name}:{clase.name}.{nombre}")
+
+    assert not faltan, (
+        f"campos de texto sin min_length o sin validador de espacios: {faltan}. "
+        f"Sin los dos, una cadena vacia llega al servicio y sale un 500 en vez de un 422")
