@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Navegacion from "./components/Navegacion";
 import Clasificar from "./pages/Clasificar";
 import Biblioteca from "./pages/Biblioteca";
-import MisTemas from "./pages/MisTemas";
+import PalabraClave from "./pages/PalabraClave";
 import Semantica from "./pages/Semantica";
 import Propios from "./pages/Propios";
 import Dashboard from "./pages/Dashboard";
@@ -82,7 +82,7 @@ export default function App() {
       <main className="wrap">
         {vista === "clasificar" && <Clasificar alArchivar={archivar} />}
         {vista === "biblioteca" && <Biblioteca entradas={entradas} alQuitar={quitar} />}
-        {vista === "panel" && <MisTemas />}
+        {vista === "panel" && <PalabraClave irA={navegar} />}
         {vista === "semantica" && <Semantica hayTraductor={hayTraductor} />}
         {vista === "propios" && <Propios />}
         {vista === "modelo" && <Dashboard />}

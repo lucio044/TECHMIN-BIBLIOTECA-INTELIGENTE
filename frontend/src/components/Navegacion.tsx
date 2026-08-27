@@ -3,7 +3,7 @@ import type { Vista } from "../App";
 const PESTANAS: { id: Vista; etiqueta: string; icono: string }[] = [
   { id: "clasificar", etiqueta: "Clasificar", icono: "✍️" },
   { id: "biblioteca", etiqueta: "Biblioteca", icono: "📚" },
-  { id: "panel", etiqueta: "Explorar", icono: "🗂️" },
+  { id: "panel", etiqueta: "Por palabra clave", icono: "🏷️" },
   // El nombre es el del enunciado. Antes eran dos pestañas --«Buscar» y
   // «Asistente»-- con el mismo campo de texto, y no se entendia cual usar.
   { id: "semantica", etiqueta: "Búsqueda semántica", icono: "🔍" },
