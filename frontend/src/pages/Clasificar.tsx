@@ -30,10 +30,10 @@ export default function Clasificar({
 }: {
   alArchivar: (e: Omit<EntradaBiblioteca, "id" | "fecha">) => boolean;
 }) {
-  const [titulo, setTitulo] = useState("Introducción a Spring Boot");
-  const [texto, setTexto] = useState(
-    "En este contenido se presentan los conceptos básicos para la creación de APIs REST utilizando Java y Spring Boot, incluyendo controladores y servicios.",
-  );
+  // Vacios: el placeholder ya dice que va, y un formulario relleno invita a
+  // darle a Clasificar sin leer lo que dice.
+  const [titulo, setTitulo] = useState("");
+  const [texto, setTexto] = useState("");
   const [resultado, setResultado] = useState<ContenidoSalida | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +109,7 @@ export default function Clasificar({
   return (
     <section>
       <div className="hero">
-        <h1>Clasificar contenido</h1>
+        <h1>Clasificá tu contenido técnico con <span className="gr">IA</span></h1>
         <div className="sub">
           El motor lee el contenido, decide su categoría y lo archiva en tu biblioteca — automáticamente.
         </div>
@@ -170,16 +170,14 @@ export default function Clasificar({
 
         <div className="card">
           <div className="card-h">
-            {exploracion ? "🏷️ Documentos del histórico" : "📊 Resultado del modelo"}
+            {exploracion ? "🏷️ Documentos del histórico" : "📊 Resultado del análisis"}
           </div>
           <div className="card-b">
             {(cargando || explorando) && <Cargando />}
             {!cargando && !explorando && error && <Aviso mensaje={error} />}
 
             {!cargando && !explorando && !error && !resultado && !exploracion && (
-              <div className="chat-vacio">
-                Pegá un contenido técnico y el modelo te dice<br />a qué categoría pertenece.
-              </div>
+              <Vacio />
             )}
 
             {!cargando && !explorando && resultado && (
@@ -276,5 +274,59 @@ function Resultado({ datos, archivado }: { datos: ContenidoSalida; archivado: bo
         </>
       )}
     </>
+  );
+}
+
+/** El panel antes de clasificar: se ve la forma de lo que va a salir, con
+ *  los lugares vacíos. Ni un cartel de texto --que no dice qué se obtiene--
+ *  ni valores de ejemplo --que se leen como si el modelo ya hubiera
+ *  respondido--. */
+function Vacio() {
+  return (
+    <div style={{ opacity: 0.45 }}>
+      <div className="res-top">
+        <div className="ring">
+          <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" fill="none"
+                    stroke="rgba(255,255,255,.08)" strokeWidth="9" />
+          </svg>
+          <div className="val">
+            <b>—</b>
+            <span>confianza</span>
+          </div>
+        </div>
+        <div>
+          <div className="rc" style={{ fontSize: 18, fontWeight: 700 }}>
+            <span className="rdot" style={{ background: "var(--muted)" }} />
+            Categoría
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            entre las 8 del modelo
+          </div>
+        </div>
+      </div>
+
+      <div className="lab">Palabras clave</div>
+      <div className="kwcloud">
+        <span className="peso">—</span>
+        <span className="peso">—</span>
+        <span className="peso">—</span>
+        <span className="peso">—</span>
+      </div>
+
+      <div className="lab" style={{ marginTop: 18 }}>Otras categorías consideradas</div>
+      {[0, 1, 2].map((i) => (
+        <div className="rank-row" key={i}>
+          <span className="name">—</span>
+          <span className="rank-bar"><i style={{ width: 0 }} /></span>
+          <span className="pc">—</span>
+        </div>
+      ))}
+
+      <div className="lab" style={{ marginTop: 18 }}>Contenido relacionado del histórico</div>
+      <div className="rel-nota" style={{ marginTop: 0 }}>
+        Clasificá un contenido para ver los documentos que se le parecen.
+      </div>
+    </div>
   );
 }
