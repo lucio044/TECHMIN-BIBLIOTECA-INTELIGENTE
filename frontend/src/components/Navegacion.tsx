@@ -3,8 +3,10 @@ import type { Vista } from "../App";
 const PESTANAS: { id: Vista; etiqueta: string; icono: string }[] = [
   { id: "clasificar", etiqueta: "Clasificar", icono: "✍️" },
   { id: "biblioteca", etiqueta: "Biblioteca", icono: "📚" },
-  { id: "panel", etiqueta: "Mis temas", icono: "🗂️" },
-  // Los nombres son los del enunciado del hackathon.
+  // Los nombres son los del enunciado del hackathon: «Busqueda por palabras
+  // clave» y «Busqueda semantica» son dos de los recursos opcionales que
+  // lista, y asi se lee de una cual hace que.
+  { id: "panel", etiqueta: "Por palabras clave", icono: "🏷️" },
   { id: "semantica", etiqueta: "Búsqueda semántica", icono: "🔍" },
   { id: "chat", etiqueta: "Chat", icono: "💬" },
   { id: "propios", etiqueta: "Categorías propias", icono: "🧪" },

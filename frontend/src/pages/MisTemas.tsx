@@ -42,10 +42,10 @@ export default function MisTemas() {
   return (
     <section>
       <div className="hero">
-        <h1>Explorar por término</h1>
+        <h1>Por <span className="gr">palabras clave</span></h1>
         <div className="sub">
-          Busca documentos donde el término aparece literalmente. Para buscar por significado
-          está la pestaña Buscar.
+          Encuentra los documentos donde <b>aparece literalmente</b> el término que escribas.
+          Para describir lo que buscás con tus palabras está Búsqueda semántica.
         </div>
       </div>
 
