@@ -88,6 +88,12 @@ export interface Historico {
   fragmentos: Fragmento[];
 }
 
+/** Un turno del historial, tal como lo espera POST /v1/chat. */
+export interface MensajeChat {
+  rol: "user" | "assistant";
+  contenido: string;
+}
+
 export interface RespuestaChat {
   respuesta: string;
   tipo: "explicacion" | "historico" | "sin_informacion" | string;

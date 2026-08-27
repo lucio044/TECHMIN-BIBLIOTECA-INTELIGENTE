@@ -6,8 +6,8 @@
 
 import type {
   ContenidoEntrada, ContenidoSalida, RespuestaSemantica, RespuestaBusqueda,
-  RespuestaChat, EstadoTraductor, RespuestaTraduccion, InfoModelo, Metricas,
-  ModeloPropio,
+  RespuestaChat, MensajeChat, EstadoTraductor, RespuestaTraduccion, InfoModelo,
+  Metricas, ModeloPropio,
 } from "../types";
 
 const enLocal = ["localhost", "127.0.0.1", ""].includes(location.hostname);
@@ -77,8 +77,14 @@ export const sugerencias = () =>
 
 // --- asistente -------------------------------------------------------------
 
-export const preguntar = (texto: string) =>
-  pedir<RespuestaChat>("/chat", { method: "POST", body: JSON.stringify({ texto }) });
+/** El historial va en cada peticion: la API no guarda estado, asi que sin
+ *  el una pregunta de seguimiento --«y para que sirve?»-- llega sin saber
+ *  de que se estaba hablando. */
+export const preguntar = (texto: string, historial: MensajeChat[] = []) =>
+  pedir<RespuestaChat>("/chat", {
+    method: "POST",
+    body: JSON.stringify({ texto, historial }),
+  });
 
 // --- traduccion ------------------------------------------------------------
 
