@@ -17,10 +17,6 @@ const EJEMPLOS: { icono: string; etiqueta: string; titulo: string; texto: string
     texto: "Cómo administrar el estado de una aplicación web con componentes y hooks de React y Tailwind." },
   { icono: "🗄️", etiqueta: "Bases de Datos", titulo: "Optimizar consultas SQL",
     texto: "Uso de índices, JOIN y GROUP BY para acelerar consultas en PostgreSQL sobre tablas muy grandes." },
-  { icono: "🔒", etiqueta: "Seguridad", titulo: "Autenticación con JWT",
-    texto: "Cómo proteger una API con tokens JWT, OAuth y buenas prácticas de cifrado y seguridad." },
-  { icono: "📈", etiqueta: "Ciencia de Datos", titulo: "Modelo de clasificación con scikit-learn",
-    texto: "Entrenamiento de un modelo de machine learning con pandas y regresión logística sobre un dataset de textos." },
 ];
 
 const LARGO_MINIMO = 20;
