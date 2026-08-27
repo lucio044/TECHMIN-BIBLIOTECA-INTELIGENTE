@@ -1,0 +1,21 @@
+# Vercel solo construye y sirve la pagina. El resto del repositorio no hace
+# falta subirlo: la API corre en su propia instancia y los artefactos del
+# modelo pesan 33 MB.
+backend/
+nlp/
+notebooks/
+modelos/
+semantica/
+traduccion/
+despliegue/
+# Se excluye el contenido y no la carpeta: si se excluyera "dataset/" no
+# habria forma de volver a incluir un archivo de adentro.
+dataset/*
+!dataset/muestra_tipo_contenido.csv
+*.md
+!README.md
+preparar.py
+
+# El prototipo de un solo archivo, reemplazado por frontend/. Sigue en el
+# repositorio pero no se publica.
+index.html

@@ -38,8 +38,13 @@ jobs:
 
       # `npm run build` corre `tsc -b` primero, asi que un error de tipos
       # detiene la publicacion en lugar de subir una pagina rota.
+      #
+      # BASE_PATH es lo que distingue este despliegue del de Vercel: Pages
+      # sirve bajo el nombre del repositorio y Vercel desde la raiz.
       - run: npm run build
         working-directory: frontend
+        env:
+          BASE_PATH: /TECHMIND-BIBLIOTECA-INTELIGENTE/
 
       - uses: actions/configure-pages@v5
 
