@@ -7,7 +7,7 @@
 import type {
   ContenidoEntrada, ContenidoSalida, RespuestaSemantica, RespuestaBusqueda,
   RespuestaChat, MensajeChat, EstadoTraductor, RespuestaTraduccion, InfoModelo,
-  Metricas, ModeloPropio,
+  Metricas, ModeloPropio, RespuestaSugerencias,
 } from "../types";
 
 const enLocal = ["localhost", "127.0.0.1", ""].includes(location.hostname);
@@ -72,8 +72,10 @@ export const buscarTermino = (termino: string, cantidad = 10) =>
     `/buscar?termino=${encodeURIComponent(termino)}&cantidad=${cantidad}`,
   );
 
-export const sugerencias = () =>
-  pedir<{ sugerencias: string[] }>("/sugerencias");
+/** Terminos frecuentes del historico. La lista viene bajo `terminos`, no
+ *  bajo `sugerencias`: adivinar el nombre hizo que la pantalla se quedara
+ *  sin chips y que el fallo se lo tragara un catch. */
+export const sugerencias = () => pedir<RespuestaSugerencias>("/sugerencias");
 
 // --- asistente -------------------------------------------------------------
 

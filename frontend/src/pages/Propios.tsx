@@ -130,13 +130,14 @@ export default function Propios() {
               <div className="rel" key={m.id}>
                 <div className="rel-h">
                   <div className="rt">{m.nombre}</div>
-                  {m.exactitud !== undefined && (
-                    <span className="sim">{Math.round(m.exactitud * 100)}%</span>
-                  )}
+                  <span className="sim" title="F1 macro sobre su propia partición retenida">
+                    {m.f1_macro.toFixed(2)}
+                  </span>
                 </div>
                 <div className="rx">
                   {m.ejemplos} ejemplos · {m.categorias.length} categorías:{" "}
                   {m.categorias.join(", ")}
+                  {m.entrenado && ` · ${new Date(m.entrenado).toLocaleDateString("es")}`}
                 </div>
                 <div className="rc">
                   {resultados[m.id] && <span className="peso">{resultados[m.id]}</span>}

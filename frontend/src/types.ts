@@ -149,13 +149,31 @@ export interface Metricas {
   };
 }
 
+/** Tal como lo devuelve GET /v1/modelos. Los nombres salen del esquema
+ *  OpenAPI, no de la memoria: escribir `exactitud` en lugar de `f1_macro`
+ *  no rompe nada al compilar, simplemente deja el dato sin mostrar. */
 export interface ModeloPropio {
   id: string;
   nombre: string;
   categorias: string[];
   ejemplos: number;
-  exactitud?: number;
-  creado?: string;
+  distribucion: Record<string, number>;
+  f1_macro: number;
+  entrenado: string;
+}
+
+/** Un termino frecuente del historico, tal como lo devuelve
+ *  GET /v1/sugerencias. La lista viene bajo la clave `terminos`. */
+export interface TerminoSugerido {
+  termino: string;
+  categoria: Categoria;
+  documentos: number;
+}
+
+export interface RespuestaSugerencias {
+  generado_por: string;
+  total: number;
+  terminos: TerminoSugerido[];
 }
 
 /** Lo guardado en el navegador, que no viene de la API. */

@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import * as api from "../lib/api";
 import { ErrorApi } from "../lib/api";
 import { Cargando, Error as Aviso, colorDe } from "../components/Comunes";
-import type { RespuestaBusqueda } from "../types";
+import type { RespuestaBusqueda, TerminoSugerido } from "../types";
 
 export default function MisTemas() {
   const [termino, setTermino] = useState("");
-  const [chips, setChips] = useState<string[]>([]);
+  const [chips, setChips] = useState<TerminoSugerido[]>([]);
   const [datos, setDatos] = useState<RespuestaBusqueda | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export default function MisTemas() {
   useEffect(() => {
     let vivo = true;
     api.sugerencias()
-      .then((s) => { if (vivo) setChips(s.sugerencias.slice(0, 12)); })
+      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 12)); })
       .catch(() => { /* sin sugerencias la vista funciona igual */ });
     return () => { vivo = false; };
   }, []);
@@ -44,8 +44,8 @@ export default function MisTemas() {
       <div className="hero">
         <h1>Por <span className="gr">palabras clave</span></h1>
         <div className="sub">
-          Encuentra los documentos donde <b>aparece literalmente</b> el término que escribas.
-          Para describir lo que buscás con tus palabras está Búsqueda semántica.
+          Encuentra los documentos donde aparece el término que escribas. Tocá uno de los
+          términos frecuentes o escribí el tuyo.
         </div>
       </div>
 
@@ -68,8 +68,13 @@ export default function MisTemas() {
               Términos frecuentes en el histórico:
               <div>
                 {chips.map((c) => (
-                  <span key={c} className="ej" onClick={() => { setTermino(c); void explorar(c); }}>
-                    {c}
+                  <span
+                    key={c.termino}
+                    className="ej"
+                    title={`${c.documentos} documentos · ${c.categoria}`}
+                    onClick={() => { setTermino(c.termino); void explorar(c.termino); }}
+                  >
+                    {c.termino}
                   </span>
                 ))}
               </div>
