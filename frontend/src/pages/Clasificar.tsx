@@ -48,7 +48,7 @@ export default function Clasificar({
   useEffect(() => {
     let vivo = true;
     api.sugerencias()
-      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 10)); })
+      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 6)); })
       .catch(() => { /* sin sugerencias la pestaña funciona igual */ });
     return () => { vivo = false; };
   }, []);
@@ -168,7 +168,7 @@ export default function Clasificar({
 
             {chips.length > 0 && (
               <div className="ejemplos">
-                O explorá el histórico por término:
+                Búsqueda por palabras clave:
                 <div>
                   {chips.map((c) => (
                     <span
@@ -279,7 +279,11 @@ function Resultado({ datos, archivado }: { datos: ContenidoSalida; archivado: bo
                   {c.similitud.toFixed(2)}
                 </span>
               </div>
-              {c.extracto && <div className="rx">{c.extracto}</div>}
+              {c.extracto && (
+                <div className="rx" style={{ WebkitLineClamp: 1, lineClamp: 1 }}>
+                  {c.extracto}
+                </div>
+              )}
               <div className="rc">
                 <span className="rdot" style={{ background: colorDe(c.categoria) }} />
                 {c.categoria}
