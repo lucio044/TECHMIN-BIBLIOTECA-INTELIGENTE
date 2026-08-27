@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import Navegacion from "./components/Navegacion";
 import Clasificar from "./pages/Clasificar";
 import Biblioteca from "./pages/Biblioteca";
-import MisTemas from "./pages/MisTemas";
 import Buscar from "./pages/Buscar";
 import Asistente from "./pages/Asistente";
 import Propios from "./pages/Propios";
@@ -12,10 +11,10 @@ import * as almacen from "./lib/almacen";
 import type { EntradaBiblioteca } from "./types";
 
 export type Vista =
-  | "clasificar" | "biblioteca" | "panel" | "semantica" | "chat" | "propios" | "modelo";
+  | "clasificar" | "biblioteca" | "semantica" | "chat" | "propios" | "modelo";
 
 const VISTAS: Vista[] = [
-  "clasificar", "biblioteca", "panel", "semantica", "chat", "propios", "modelo",
+  "clasificar", "biblioteca", "semantica", "chat", "propios", "modelo",
 ];
 
 const esVista = (v: string): v is Vista => (VISTAS as string[]).includes(v);
@@ -83,7 +82,6 @@ export default function App() {
       <main className="wrap">
         {vista === "clasificar" && <Clasificar alArchivar={archivar} />}
         {vista === "biblioteca" && <Biblioteca entradas={entradas} alQuitar={quitar} />}
-        {vista === "panel" && <MisTemas entradas={entradas} />}
         {vista === "semantica" && <Buscar hayTraductor={hayTraductor} />}
         {vista === "chat" && <Asistente hayTraductor={hayTraductor} />}
         {vista === "propios" && <Propios />}
