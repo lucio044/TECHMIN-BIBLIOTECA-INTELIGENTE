@@ -1,107 +1,134 @@
-/** Explorar el histórico por término, que es la búsqueda léxica --distinta
- *  de la semántica: acá el término tiene que aparecer de verdad. */
+/** Mis temas — cómo se reparte lo que esta persona fue guardando.
+ *
+ *  No busca nada: mira la biblioteca del navegador y la resume. En el
+ *  prototipo era asi, y convertirla en un buscador la volvio indistinguible
+ *  de la busqueda semantica, que es de donde salio la confusion.
+ *
+ *  La busqueda por termino contra el historico vive donde estaba: en la
+ *  pestaña Clasificar, bajo «O explora el historico por termino». */
 
-import { useEffect, useState } from "react";
-import * as api from "../lib/api";
-import { ErrorApi } from "../lib/api";
-import { Cargando, Error as Aviso, colorDe } from "../components/Comunes";
-import type { RespuestaBusqueda, TerminoSugerido } from "../types";
+import { useMemo } from "react";
+import { COLORES, colorDe } from "../components/Comunes";
+import type { EntradaBiblioteca } from "../types";
 
-export default function MisTemas() {
-  const [termino, setTermino] = useState("");
-  const [chips, setChips] = useState<TerminoSugerido[]>([]);
-  const [datos, setDatos] = useState<RespuestaBusqueda | null>(null);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const CATEGORIAS = Object.keys(COLORES);
 
-  useEffect(() => {
-    let vivo = true;
-    api.sugerencias()
-      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 12)); })
-      .catch(() => { /* sin sugerencias la vista funciona igual */ });
-    return () => { vivo = false; };
-  }, []);
+export default function MisTemas({ entradas }: { entradas: EntradaBiblioteca[] }) {
+  const cuentas = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const e of entradas) m[e.categoria] = (m[e.categoria] ?? 0) + 1;
+    return m;
+  }, [entradas]);
 
-  async function explorar(t = termino) {
-    if (t.trim().length < 2) {
-      setError("El término necesita al menos dos caracteres.");
-      return;
+  // Los temas mas frecuentes salen de las palabras clave que devolvio el
+  // modelo en cada clasificacion, no de una lista escrita a mano.
+  const temas = useMemo(() => {
+    const f: Record<string, number> = {};
+    for (const e of entradas) {
+      for (const p of e.palabras ?? []) {
+        const k = p.trim();
+        if (k) f[k] = (f[k] ?? 0) + 1;
+      }
     }
-    setCargando(true);
-    setError(null);
-    try {
-      setDatos(await api.buscarTermino(t.trim(), 10));
-    } catch (e) {
-      setError(e instanceof ErrorApi ? e.message : "No se pudo explorar.");
-      setDatos(null);
-    } finally {
-      setCargando(false);
-    }
+    return Object.entries(f).sort((a, b) => b[1] - a[1]).slice(0, 14);
+  }, [entradas]);
+
+  const usadas = Object.keys(cuentas).length;
+  const confianza = entradas.length
+    ? Math.round((entradas.reduce((s, e) => s + e.probabilidad, 0) / entradas.length) * 100)
+    : 0;
+
+  if (entradas.length === 0) {
+    return (
+      <section>
+        <div className="hero">
+          <h1>Mis <span className="gr">temas</span></h1>
+          <div className="sub">
+            Cómo se distribuye y de qué habla el conocimiento que fuiste guardando.
+          </div>
+        </div>
+        <div className="chat-vacio">
+          Todavía no clasificaste nada.<br />
+          Cuando lo hagas, acá vas a ver de qué temas se trata tu biblioteca.
+        </div>
+      </section>
+    );
   }
+
+  const maximo = Math.max(1, ...Object.values(cuentas));
+  const maxFrec = Math.max(1, ...temas.map(([, f]) => f));
 
   return (
     <section>
       <div className="hero">
-        <h1>Por <span className="gr">palabras clave</span></h1>
+        <h1>Mis <span className="gr">temas</span></h1>
         <div className="sub">
-          Encuentra los documentos donde aparece el término que escribas. Tocá uno de los
-          términos frecuentes o escribí el tuyo.
+          Cómo se distribuye y de qué habla el conocimiento que fuiste guardando.
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-b">
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <input
-              className="tin" value={termino} style={{ flex: "1 1 240px" }}
-              onChange={(e) => setTermino(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") void explorar(); }}
-              placeholder="Ej.: docker, jwt, postgres…"
-            />
-            <button className="btn" onClick={() => void explorar()} disabled={cargando}>
-              {cargando ? "Buscando…" : "Explorar"}
-            </button>
+      <div className="stats">
+        <div className="stat">
+          <div className="k">Contenidos organizados</div>
+          <div className="v grad">{entradas.length}</div>
+        </div>
+        <div className="stat">
+          <div className="k">Categorías activas</div>
+          <div className="v">
+            {usadas}<span style={{ fontSize: 16, color: "var(--muted)" }}> / 8</span>
           </div>
+        </div>
+        <div className="stat">
+          <div className="k">Confianza promedio</div>
+          <div className="v">{confianza}%</div>
+        </div>
+        <div className="stat">
+          <div className="k">Temas únicos</div>
+          <div className="v">{temas.length}</div>
+        </div>
+      </div>
 
-          {chips.length > 0 && (
-            <div className="ejemplos">
-              Términos frecuentes en el histórico:
-              <div>
-                {chips.map((c) => (
-                  <span
-                    key={c.termino}
-                    className="ej"
-                    title={`${c.documentos} documentos · ${c.categoria}`}
-                    onClick={() => { setTermino(c.termino); void explorar(c.termino); }}
-                  >
-                    {c.termino}
+      <div className="panel-cols">
+        <div className="card">
+          <div className="card-h">📚 Distribución por categoría</div>
+          <div className="card-b">
+            {CATEGORIAS.filter((c) => cuentas[c] > 0)
+              .sort((a, b) => cuentas[b] - cuentas[a])
+              .map((c) => (
+                <div className="dist-row" key={c}>
+                  <span className="dn">
+                    <span className="dd" style={{ background: colorDe(c) }} />
+                    {c}
                   </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        {cargando && <Cargando />}
-        {!cargando && error && <Aviso mensaje="No se pudo explorar" detalle={error} />}
-        {!cargando && datos?.resultados.length === 0 && (
-          <div className="chat-vacio">Ningún documento contiene «{datos.termino}».</div>
-        )}
-        {!cargando && datos?.resultados.map((r) => (
-          <div className="rel" key={r.id}>
-            <div className="rt">{r.titulo}</div>
-            {r.extracto && <div className="rx">{r.extracto}</div>}
-            <div className="rc">
-              <span className="rdot" style={{ background: colorDe(r.categoria) }} />
-              {r.categoria}
-            </div>
+                  <span className="dist-bar">
+                    <i style={{
+                      width: `${(cuentas[c] / maximo) * 100}%`,
+                      background: `linear-gradient(90deg,${COLORES[c][0]},${COLORES[c][1]})`,
+                    }} />
+                  </span>
+                  <span className="dv">{cuentas[c]}</span>
+                </div>
+              ))}
           </div>
-        ))}
-        {!cargando && datos && datos.resultados.length > 0 && (
-          <div className="rel-nota">{datos.total} documentos contienen «{datos.termino}»</div>
-        )}
+        </div>
+
+        <div className="card">
+          <div className="card-h">🏷️ Temas más frecuentes</div>
+          <div className="card-b kwcloud">
+            {temas.length === 0 && <span style={{ color: "#5c6885" }}>Sin datos aún.</span>}
+            {/* El tamaño de cada término es proporcional a cuántas veces
+                aparece, que es lo que convierte la lista en una nube. */}
+            {temas.map(([k, f]) => (
+              <span
+                key={k}
+                className="chip"
+                style={{ fontSize: `${(12 + (f / maxFrec) * 9).toFixed(0)}px` }}
+              >
+                {k} <b style={{ opacity: 0.5 }}>{f}</b>
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

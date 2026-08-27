@@ -3,10 +3,10 @@ import type { Vista } from "../App";
 const PESTANAS: { id: Vista; etiqueta: string; icono: string }[] = [
   { id: "clasificar", etiqueta: "Clasificar", icono: "✍️" },
   { id: "biblioteca", etiqueta: "Biblioteca", icono: "📚" },
-  // Los nombres son los del enunciado del hackathon: «Busqueda por palabras
-  // clave» y «Busqueda semantica» son dos de los recursos opcionales que
-  // lista, y asi se lee de una cual hace que.
-  { id: "panel", etiqueta: "Por palabras clave", icono: "🏷️" },
+  // «Mis temas» resume la biblioteca propia; no busca nada. La busqueda por
+  // termino contra el historico vive dentro de Clasificar, como en el
+  // prototipo.
+  { id: "panel", etiqueta: "Mis temas", icono: "🗂️" },
   { id: "semantica", etiqueta: "Búsqueda semántica", icono: "🔍" },
   { id: "chat", etiqueta: "Chat", icono: "💬" },
   { id: "propios", etiqueta: "Categorías propias", icono: "🧪" },

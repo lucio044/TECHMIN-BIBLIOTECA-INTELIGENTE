@@ -83,7 +83,7 @@ export default function App() {
       <main className="wrap">
         {vista === "clasificar" && <Clasificar alArchivar={archivar} />}
         {vista === "biblioteca" && <Biblioteca entradas={entradas} alQuitar={quitar} />}
-        {vista === "panel" && <MisTemas />}
+        {vista === "panel" && <MisTemas entradas={entradas} />}
         {vista === "semantica" && <Buscar hayTraductor={hayTraductor} />}
         {vista === "chat" && <Asistente hayTraductor={hayTraductor} />}
         {vista === "propios" && <Propios />}

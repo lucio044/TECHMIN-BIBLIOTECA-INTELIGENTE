@@ -14,11 +14,18 @@ import type { RespuestaSemantica, ResultadoSemantico } from "../types";
 // al reiniciar» daba 0,51 con un error de conexion de go-redis. La forma
 // interrogativa perjudica al embedding: la misma idea enunciada como tema
 // --«como desplegar contenedores»-- sube a 0,60 y acierta.
-const EJEMPLOS = [
-  "cómo protejo las contraseñas de los usuarios",  // 0,75
-  "la aplicación se cierra sola en el celular",    // 0,72
-  "cómo desplegar contenedores",                   // 0,60
-  "guardar millones de registros y buscarlos por fecha",
+// Etiqueta corta y consulta larga, como en el prototipo: poner la consulta
+// entera en el chip hace una fila de botones enormes.
+//
+// El ultimo es a proposito una consulta ajena al corpus. Que el sistema
+// conteste «no hay nada que se parezca» es tan demostrable como que
+// encuentre, y es lo que lo separa de uno que siempre responde algo.
+const EJEMPLOS: { etiqueta: string; consulta: string }[] = [
+  { etiqueta: "contraseñas", consulta: "cómo protejo las contraseñas de los usuarios" },
+  { etiqueta: "app que se cierra", consulta: "la aplicación se cierra sola en el celular" },
+  { etiqueta: "contenedores", consulta: "cómo desplegar contenedores" },
+  { etiqueta: "guardar datos", consulta: "guardar millones de registros y buscarlos por fecha" },
+  { etiqueta: "algo ajeno al corpus", consulta: "receta de sopa de tomate con albahaca" },
 ];
 
 const LARGO_MINIMO = 3;
@@ -97,10 +104,11 @@ export default function Buscar({ hayTraductor }: { hayTraductor: boolean }) {
       </div>
 
       <div className="card">
+        <div className="card-h">🔍 Consulta en lenguaje corriente</div>
         <div className="card-b">
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div className="chat-envio">
             <input
-              className="tin" value={consulta} style={{ flex: "1 1 260px" }}
+              className="tin" value={consulta}
               onChange={(e) => setConsulta(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") void buscar(); }}
               placeholder="Ej.: cómo protejo las contraseñas de los usuarios"
@@ -114,8 +122,13 @@ export default function Buscar({ hayTraductor }: { hayTraductor: boolean }) {
             Probá con una consulta:
             <div>
               {EJEMPLOS.map((e) => (
-                <span key={e} className="ej" onClick={() => { setConsulta(e); void buscar(e); }}>
-                  {e}
+                <span
+                  key={e.etiqueta}
+                  className="ej"
+                  title={e.consulta}
+                  onClick={() => { setConsulta(e.consulta); void buscar(e.consulta); }}
+                >
+                  {e.etiqueta}
                 </span>
               ))}
             </div>

@@ -2,11 +2,13 @@
  *  devuelve categoría, probabilidad y palabras clave. Lo demás --el
  *  ranking y los relacionados-- va por encima de lo pedido. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as api from "../lib/api";
 import { ErrorApi } from "../lib/api";
 import { Anillo, Cargando, Error as Aviso, colorDe } from "../components/Comunes";
-import type { ContenidoSalida, EntradaBiblioteca } from "../types";
+import type {
+  ContenidoSalida, EntradaBiblioteca, RespuestaBusqueda, TerminoSugerido,
+} from "../types";
 
 const EJEMPLOS: { icono: string; etiqueta: string; titulo: string; texto: string }[] = [
   { icono: "☁️", etiqueta: "DevOps", titulo: "Desplegar con Docker y Kubernetes",
@@ -37,6 +39,34 @@ export default function Clasificar({
   const [error, setError] = useState<string | null>(null);
   const [archivado, setArchivado] = useState(false);
 
+  // Explorar el historico por termino vive aca, como en el prototipo: los
+  // terminos no estan escritos a mano, los devuelve /v1/sugerencias.
+  const [chips, setChips] = useState<TerminoSugerido[]>([]);
+  const [exploracion, setExploracion] = useState<RespuestaBusqueda | null>(null);
+  const [explorando, setExplorando] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    api.sugerencias()
+      .then((s) => { if (vivo) setChips(s.terminos.slice(0, 10)); })
+      .catch(() => { /* sin sugerencias la pestaña funciona igual */ });
+    return () => { vivo = false; };
+  }, []);
+
+  async function explorar(termino: string) {
+    setExplorando(true);
+    setResultado(null);
+    setError(null);
+    try {
+      setExploracion(await api.buscarTermino(termino, 5));
+    } catch (e) {
+      setError(e instanceof ErrorApi ? e.message : "No se pudo explorar.");
+      setExploracion(null);
+    } finally {
+      setExplorando(false);
+    }
+  }
+
   async function enviar() {
     if (texto.trim().length < LARGO_MINIMO) {
       setError(`El texto debe tener al menos ${LARGO_MINIMO} caracteres.`);
@@ -50,6 +80,7 @@ export default function Clasificar({
     setCargando(true);
     setError(null);
     setArchivado(false);
+    setExploracion(null);
     try {
       const r = await api.clasificar({ titulo: titulo.trim(), texto: texto.trim() });
       setResultado(r);
@@ -116,21 +147,61 @@ export default function Clasificar({
                 ))}
               </div>
             </div>
+
+            {chips.length > 0 && (
+              <div className="ejemplos">
+                O explorá el histórico por término:
+                <div>
+                  {chips.map((c) => (
+                    <span
+                      key={c.termino}
+                      className="ej"
+                      title={`${c.documentos} documentos · ${c.categoria}`}
+                      onClick={() => void explorar(c.termino)}
+                    >
+                      {c.termino}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="card">
-          <div className="card-h">📊 Resultado del modelo</div>
+          <div className="card-h">
+            {exploracion ? "🏷️ Documentos del histórico" : "📊 Resultado del modelo"}
+          </div>
           <div className="card-b">
-            {cargando && <Cargando />}
-            {!cargando && error && <Aviso mensaje={error} />}
-            {!cargando && !error && !resultado && (
+            {(cargando || explorando) && <Cargando />}
+            {!cargando && !explorando && error && <Aviso mensaje={error} />}
+
+            {!cargando && !explorando && !error && !resultado && !exploracion && (
               <div className="chat-vacio">
                 Pegá un contenido técnico y el modelo te dice<br />a qué categoría pertenece.
               </div>
             )}
-            {!cargando && resultado && (
+
+            {!cargando && !explorando && resultado && (
               <Resultado datos={resultado} archivado={archivado} />
+            )}
+
+            {!explorando && exploracion && (
+              <>
+                {exploracion.resultados.map((r) => (
+                  <div className="rel" key={r.id}>
+                    <div className="rt">{r.titulo}</div>
+                    {r.extracto && <div className="rx">{r.extracto}</div>}
+                    <div className="rc">
+                      <span className="rdot" style={{ background: colorDe(r.categoria) }} />
+                      {r.categoria}
+                    </div>
+                  </div>
+                ))}
+                <div className="rel-nota">
+                  {exploracion.total} documentos contienen «{exploracion.termino}»
+                </div>
+              </>
             )}
           </div>
         </div>
