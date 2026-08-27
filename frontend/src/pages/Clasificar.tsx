@@ -166,19 +166,14 @@ export default function Clasificar({
               </div>
             </div>
 
-            {/* Las dos filas hacian cosas distintas y se veian iguales: los
-                ejemplos rellenan este formulario, y esto busca en el
-                historico y escribe en el panel de la derecha. Se separan por
-                estilo --pastilla en vez de chip-- y por texto. */}
             {chips.length > 0 && (
               <div className="ejemplos">
-                🔍 O buscá un término en los 38.257 documentos:
+                Búsqueda por palabras clave:
                 <div>
                   {chips.map((c) => (
                     <span
                       key={c.termino}
-                      className="chip"
-                      style={{ cursor: "pointer" }}
+                      className="ej"
                       title={`${c.documentos} documentos · ${c.categoria}`}
                       onClick={() => void explorar(c.termino)}
                     >
