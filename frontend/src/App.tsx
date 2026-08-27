@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import Navegacion from "./components/Navegacion";
 import Clasificar from "./pages/Clasificar";
 import Biblioteca from "./pages/Biblioteca";
-import PalabraClave from "./pages/PalabraClave";
-import Semantica from "./pages/Semantica";
+import MisTemas from "./pages/MisTemas";
+import Buscar from "./pages/Buscar";
+import Asistente from "./pages/Asistente";
 import Propios from "./pages/Propios";
 import Dashboard from "./pages/Dashboard";
 import * as api from "./lib/api";
@@ -11,10 +12,10 @@ import * as almacen from "./lib/almacen";
 import type { EntradaBiblioteca } from "./types";
 
 export type Vista =
-  | "clasificar" | "biblioteca" | "panel" | "semantica" | "propios" | "modelo";
+  | "clasificar" | "biblioteca" | "panel" | "semantica" | "chat" | "propios" | "modelo";
 
 const VISTAS: Vista[] = [
-  "clasificar", "biblioteca", "panel", "semantica", "propios", "modelo",
+  "clasificar", "biblioteca", "panel", "semantica", "chat", "propios", "modelo",
 ];
 
 const esVista = (v: string): v is Vista => (VISTAS as string[]).includes(v);
@@ -82,8 +83,9 @@ export default function App() {
       <main className="wrap">
         {vista === "clasificar" && <Clasificar alArchivar={archivar} />}
         {vista === "biblioteca" && <Biblioteca entradas={entradas} alQuitar={quitar} />}
-        {vista === "panel" && <PalabraClave irA={navegar} />}
-        {vista === "semantica" && <Semantica hayTraductor={hayTraductor} />}
+        {vista === "panel" && <MisTemas />}
+        {vista === "semantica" && <Buscar hayTraductor={hayTraductor} />}
+        {vista === "chat" && <Asistente hayTraductor={hayTraductor} />}
         {vista === "propios" && <Propios />}
         {vista === "modelo" && <Dashboard />}
       </main>
